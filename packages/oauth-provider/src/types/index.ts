@@ -1,4 +1,4 @@
-import type { LiteralString } from "@better-auth/core";
+import type { GenericEndpointContext, LiteralString } from "@better-auth/core";
 import type { InferOptionSchema, Session, User } from "better-auth/types";
 import type { JWTPayload } from "jose";
 import type { schema } from "../schema";
@@ -684,15 +684,90 @@ export interface OAuthOptions<
 	 * @see https://openid.net/specs/openid-connect-core-1_0.html#PairwiseAlg
 	 */
 	pairwiseSecret?: string;
+	/**
+	 * Custom client authentication strategies for the token endpoint.
+	 *
+	 * Keys are `client_assertion_type` URNs. When a matching assertion type arrives
+	 * at the token endpoint, the strategy handles authentication instead of the
+	 * built-in client_secret_basic/client_secret_post validation.
+	 *
+	 * @example
+	 * ```ts
+	 * clientAuthStrategies: {
+	 *   "urn:ietf:params:oauth:client-assertion-type:jwt-client-attestation":
+	 *     createWalletAttestationStrategy({ trustedIssuers: [...] }),
+	 * }
+	 * ```
+	 */
+	clientAuthStrategies?: Record<
+		string,
+		(input: {
+			assertion: string;
+			assertionType: string;
+			clientId?: string;
+			headers: Headers;
+			ctx: GenericEndpointContext;
+			opts: OAuthOptions<Scope[]>;
+		}) => Promise<ClientAuthResult>
+	>;
+	/**
+	 * Token binding callback for sender-constrained tokens (e.g., DPoP).
+	 *
+	 * Called during token issuance. When a non-null result is returned:
+	 * - `tokenType` replaces "Bearer" in the response
+	 * - `cnf` is embedded in the JWT access token payload
+	 * - `responseHeaders` are set on the HTTP response
+	 *
+	 * @example
+	 * ```ts
+	 * tokenBinding: createDpopTokenBinding()
+	 * ```
+	 */
+	tokenBinding?: (input: {
+		request: Request;
+		headers: Headers;
+		method: string;
+		url: string;
+		accessToken?: string;
+	}) => Promise<TokenBindingResult | null>;
+	/**
+	 * Resolves a `request_uri` at the authorize endpoint (PAR support).
+	 *
+	 * When the authorize endpoint receives a `request_uri` parameter, this callback
+	 * resolves it to the original authorization parameters. Return null if the URI
+	 * is invalid or expired.
+	 */
+	requestUriResolver?: (input: {
+		requestUri: string;
+		clientId: string;
+		ctx: GenericEndpointContext;
+	}) => Promise<Record<string, string> | null>;
 }
+
+export type TokenBindingResult = {
+	tokenType: string;
+	cnf: Record<string, unknown>;
+	responseHeaders?: Record<string, string>;
+};
+
+export type ClientAuthResult = {
+	clientId: string;
+	client: SchemaClient<Scope[]>;
+	metadata?: Record<string, unknown>;
+};
 
 export interface OAuthAuthorizationQuery {
 	/**
 	 * The response type.
 	 * - "code": authorization code flow.
+	 * Optional in the query when using request_uri (PAR) — resolved from stored params.
 	 */
 	// NEVER SUPPORT "token" or "id_token" - depreciated in oAuth2.1
-	response_type: "code";
+	response_type?: "code";
+	/**
+	 * PAR request_uri. When present, other params are resolved from the stored request.
+	 */
+	request_uri?: string;
 	/**
 	 * The redirect URI for the client. Must be one of the registered redirect URLs for the client.
 	 */
@@ -794,6 +869,11 @@ export interface OAuthAuthorizationQuery {
 	 * with the Claim Value being the nonce value sent in the Authentication Request.
 	 */
 	nonce?: string;
+	/**
+	 * RFC 9396 authorization_details (JSON-encoded string from the authorize query).
+	 * Carried through to the access token when present.
+	 */
+	authorization_details?: string;
 }
 
 /**

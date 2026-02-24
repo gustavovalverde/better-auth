@@ -402,6 +402,9 @@ export const oauthProvider = <O extends OAuthOptions<Scope[]>>(options: O) => {
 								opts.allowUnauthenticatedClientRegistration,
 							grant_types_supported: opts.grantTypes,
 							jwt_disabled: opts.disableJwtPlugin,
+							additional_token_endpoint_auth_methods: opts.clientAuthStrategies
+								? Object.keys(opts.clientAuthStrategies)
+								: undefined,
 						});
 					}
 					return mergeExtensionMetadata(ctx, metadata);
@@ -435,11 +438,13 @@ export const oauthProvider = <O extends OAuthOptions<Scope[]>>(options: O) => {
 				{
 					method: "GET",
 					query: z.object({
-						response_type: z.enum(["code"]),
+						response_type: z.enum(["code"]).optional(),
 						client_id: z.string(),
 						redirect_uri: SafeUrlSchema.optional(),
 						scope: z.string().optional(),
 						state: z.string().optional(),
+						// PAR: when request_uri is present, other params are resolved from the stored request
+						request_uri: z.string().optional(),
 						// OIDC4IDA / OIDC4VCI pass-through parameters.
 						// Must be included in schema to ensure they are preserved
 						// in ctx.query and later persisted with the authorization code.

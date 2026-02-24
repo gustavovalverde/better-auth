@@ -337,7 +337,42 @@ export async function validateClientCredentials(
 	clientId: string,
 	clientSecret?: string, // optional because required if client is confidential or this value is defined
 	scopes?: string[], // checks requested scopes against allowed scopes
+	assertionAuth?: {
+		assertionType: string;
+		assertion: string;
+	},
 ) {
+	// Check for custom client auth strategies (e.g., wallet attestation)
+	if (assertionAuth?.assertionType && assertionAuth?.assertion) {
+		const strategy =
+			options.clientAuthStrategies?.[assertionAuth.assertionType];
+		if (strategy) {
+			const result = await strategy({
+				assertion: assertionAuth.assertion,
+				assertionType: assertionAuth.assertionType,
+				clientId,
+				headers: ctx.request?.headers ?? new Headers(),
+				ctx,
+				opts: options,
+			});
+
+			// Validate scopes against client's allowed scopes
+			if (scopes && result.client.scopes) {
+				const validScopes = new Set(result.client.scopes);
+				for (const sc of scopes) {
+					if (!validScopes.has(sc)) {
+						throw new APIError("BAD_REQUEST", {
+							error_description: `client does not allow scope ${sc}`,
+							error: "invalid_scope",
+						});
+					}
+				}
+			}
+
+			return result.client;
+		}
+	}
+
 	const client = await getClient(ctx, options, clientId);
 	if (!client) {
 		throw new APIError("BAD_REQUEST", {

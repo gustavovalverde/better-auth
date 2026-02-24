@@ -455,6 +455,40 @@ export async function createUserTokens(
 				}, defaultExp)
 		: defaultExp;
 
+	// Token binding (e.g., DPoP sender-constrained tokens)
+	let tokenType = "Bearer";
+	let bindingCnf: Record<string, unknown> | undefined;
+	if (opts.tokenBinding && ctx.request) {
+		const bindingResult = await opts.tokenBinding({
+			request: ctx.request,
+			headers: ctx.request.headers,
+			method: ctx.request.method,
+			url: ctx.request.url,
+		});
+		if (bindingResult) {
+			tokenType = bindingResult.tokenType;
+			bindingCnf = bindingResult.cnf;
+			if (bindingResult.responseHeaders) {
+				for (const [key, value] of Object.entries(
+					bindingResult.responseHeaders,
+				)) {
+					ctx.setHeader(key, value);
+				}
+			}
+		}
+	}
+
+	// Merge binding cnf into access token claims
+	if (bindingCnf) {
+		extra = {
+			...extra,
+			accessTokenClaims: {
+				...extra?.accessTokenClaims,
+				cnf: bindingCnf,
+			},
+		};
+	}
+
 	// Check requested audience if sent as the resource parameter
 	const audience = await checkResource(ctx, opts, scopes);
 	const isRefreshToken =
@@ -556,7 +590,7 @@ export async function createUserTokens(
 		access_token: accessToken,
 		expires_in: exp - iat,
 		expires_at: exp,
-		token_type: "Bearer",
+		token_type: tokenType,
 		refresh_token: refreshToken?.token,
 		scope: scopes.join(" "),
 		id_token: idToken,
@@ -717,6 +751,9 @@ async function handlePreAuthorizedCodeGrant(
 	}
 
 	// Validate client (public client allowed; confidential requires secret)
+	const preAuthAssertionType: string | undefined =
+		ctx.body?.client_assertion_type;
+	const preAuthAssertion: string | undefined = ctx.body?.client_assertion;
 	const client = await validateClientCredentials(
 		ctx,
 		opts,
@@ -724,6 +761,9 @@ async function handlePreAuthorizedCodeGrant(
 		client_secret,
 		// v1: OIDC4VCI tokens are used to call credential endpoint; keep scopes minimal.
 		["openid"],
+		preAuthAssertionType && preAuthAssertion
+			? { assertionType: preAuthAssertionType, assertion: preAuthAssertion }
+			: undefined,
 	);
 
 	// Ensure JWT access token by defaulting audience to the credential endpoint
@@ -976,12 +1016,15 @@ async function handleAuthorizationCodeGrant(
 	}
 
 	/** Verify Client */
+	const assertionType: string | undefined = ctx.body?.client_assertion_type;
+	const assertion: string | undefined = ctx.body?.client_assertion;
 	const client = await validateClientCredentials(
 		ctx,
 		opts,
 		client_id,
 		client_secret,
 		scopes,
+		assertionType && assertion ? { assertionType, assertion } : undefined,
 	);
 
 	// Parse scopes from the authorization request
@@ -1089,6 +1132,26 @@ async function handleAuthorizationCodeGrant(
 			? new Date(verificationValue.authTime)
 			: new Date(session.createdAt);
 
+	// Propagate authorization_details from the authorize request to the access token
+	const rawAuthzDetails = verificationValue.query.authorization_details;
+	let extra:
+		| {
+				accessTokenClaims?: Record<string, unknown>;
+				tokenResponse?: Record<string, unknown>;
+		  }
+		| undefined;
+	if (rawAuthzDetails) {
+		try {
+			const parsed = JSON.parse(rawAuthzDetails) as unknown[];
+			extra = {
+				accessTokenClaims: { authorization_details: parsed },
+				tokenResponse: { authorization_details: parsed },
+			};
+		} catch {
+			// Malformed authorization_details — skip propagation
+		}
+	}
+
 	return createUserTokens(
 		ctx,
 		opts,
@@ -1100,6 +1163,7 @@ async function handleAuthorizationCodeGrant(
 		verificationValue.query?.nonce,
 		undefined,
 		authTime,
+		extra,
 	);
 }
 
@@ -1131,13 +1195,17 @@ async function handleClientCredentialsGrant(
 		client_secret = res?.client_secret;
 	}
 
+	const ccAssertionType: string | undefined = ctx.body?.client_assertion_type;
+	const ccAssertion: string | undefined = ctx.body?.client_assertion;
+	const hasAssertion = !!(ccAssertionType && ccAssertion);
+
 	if (!client_id) {
 		throw new APIError("BAD_REQUEST", {
 			error_description: "Missing required client_id",
 			error: "invalid_grant",
 		});
 	}
-	if (!client_secret) {
+	if (!client_secret && !hasAssertion) {
 		throw new APIError("BAD_REQUEST", {
 			error_description: "Missing a required client_secret",
 			error: "invalid_grant",
@@ -1150,6 +1218,10 @@ async function handleClientCredentialsGrant(
 		opts,
 		client_id,
 		client_secret,
+		undefined,
+		hasAssertion
+			? { assertionType: ccAssertionType, assertion: ccAssertion }
+			: undefined,
 	);
 
 	// OIDC scopes should not be requestable (code authorization grant should be used)
@@ -1366,12 +1438,17 @@ async function handleRefreshTokenGrant(
 		}
 	}
 
+	const rtAssertionType: string | undefined = ctx.body?.client_assertion_type;
+	const rtAssertion: string | undefined = ctx.body?.client_assertion;
 	const client = await validateClientCredentials(
 		ctx,
 		opts,
 		client_id,
 		client_secret, // Optional for refresh_grant but required on confidential clients
 		requestedScopes ?? scopes,
+		rtAssertionType && rtAssertion
+			? { assertionType: rtAssertionType, assertion: rtAssertion }
+			: undefined,
 	);
 
 	const user = await ctx.context.internalAdapter.findUserById(

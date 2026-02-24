@@ -84,7 +84,7 @@ export interface AuthServerMetadata {
 	 * @default
 	 * ["client_secret_basic", "client_secret_post"]
 	 */
-	token_endpoint_auth_methods_supported?: TokenEndpointAuthMethod[];
+	token_endpoint_auth_methods_supported?: (TokenEndpointAuthMethod | string)[];
 	/**
 	 * Array containing a list of the JWS signing
 	 * algorithms ("alg" values) supported by the token endpoint for

@@ -41,6 +41,28 @@ export type Oidc4vpOptions = {
 	statusListFetch?: (uri: string) => Awaitable<string>;
 	requiredClaimKeys?: string[];
 	clockSkewSeconds?: number;
+	/**
+	 * Handlers for additional response modes (e.g., `direct_post.jwt` for JARM).
+	 * Each handler receives the raw JWT string and returns the decoded authorization
+	 * response fields to be verified through the normal flow.
+	 */
+	responseModeHandlers?: Record<
+		string,
+		(input: { response: string }) => Awaitable<Record<string, unknown>>
+	>;
+	/**
+	 * Matches verified presentations against a query (e.g., DCQL).
+	 * Called after SD-JWT verification succeeds, before returning the response.
+	 * If the matcher returns `matched: false`, the response returns 400.
+	 */
+	presentationMatcher?: (input: {
+		query: unknown;
+		presentations: VerifiedPresentation[];
+	}) => Awaitable<{
+		matched: boolean;
+		matchedPresentations: VerifiedPresentation[];
+		errors?: string[];
+	}>;
 };
 
 const verifyBodySchema = z.object({
@@ -204,6 +226,23 @@ async function verifyAuthorizationResponsePayload(
 	if (errors.length) {
 		ctx.setStatus(400);
 		return ctx.json({ verified: false, errors });
+	}
+
+	// Run presentation matcher if configured and query context is available
+	if (options.presentationMatcher && payload.dcql_query) {
+		const matchResult = await options.presentationMatcher({
+			query: payload.dcql_query,
+			presentations: results,
+		});
+		if (!matchResult.matched) {
+			ctx.setStatus(400);
+			return ctx.json({
+				verified: false,
+				errors: (
+					matchResult.errors ?? ["presentation does not match query"]
+				).map((msg, i) => ({ index: i, message: msg })),
+			});
+		}
 	}
 
 	const response: {
@@ -510,11 +549,19 @@ export function oidc4vp(options: Oidc4vpOptions): BetterAuthPlugin {
 					},
 				},
 				async (ctx) => {
-					const rawBody = ctx.body as Record<string, unknown>;
+					let rawBody = ctx.body as Record<string, unknown>;
+
 					if (typeof rawBody.response === "string") {
-						throw new APIError("BAD_REQUEST", {
-							error: "unsupported_response_type",
-							error_description: "direct_post.jwt (JARM) is not supported",
+						const handler = options.responseModeHandlers?.["direct_post.jwt"];
+						if (!handler) {
+							throw new APIError("BAD_REQUEST", {
+								error: "unsupported_response_type",
+								error_description:
+									"direct_post.jwt requires a responseModeHandler",
+							});
+						}
+						rawBody = await handler({
+							response: rawBody.response,
 						});
 					}
 
