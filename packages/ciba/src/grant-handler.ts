@@ -139,6 +139,22 @@ export function createCibaGrantHandler(_options: CibaOptions) {
 				// Delete before issuing to prevent replay
 				await deleteCibaRequest(ctx, authReqId);
 
+				// Build extra claims: act (agent identity) + authorization_details (RAR)
+				const extra: {
+					accessTokenClaims: Record<string, unknown>;
+					tokenResponse?: Record<string, unknown>;
+				} = { accessTokenClaims: { act: { sub: client.clientId } } };
+
+				if (cibaRequest.authorizationDetails) {
+					try {
+						const ad = JSON.parse(cibaRequest.authorizationDetails);
+						extra.accessTokenClaims.authorization_details = ad;
+						extra.tokenResponse = { authorization_details: ad };
+					} catch {
+						// Ignore malformed JSON — issue tokens without authorization_details
+					}
+				}
+
 				return createUserTokens(
 					ctx,
 					opts,
@@ -150,6 +166,7 @@ export function createCibaGrantHandler(_options: CibaOptions) {
 					undefined,
 					undefined,
 					new Date(),
+					extra,
 				);
 			}
 

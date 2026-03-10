@@ -123,6 +123,22 @@ export function createCibaAuthorize(options: CibaOptions) {
 						cibaRequest.resource;
 				}
 
+				// Build extra claims: act (agent identity) + authorization_details (RAR)
+				const pushExtra: {
+					accessTokenClaims: Record<string, unknown>;
+					tokenResponse?: Record<string, unknown>;
+				} = { accessTokenClaims: { act: { sub: client.clientId } } };
+
+				if (cibaRequest.authorizationDetails) {
+					try {
+						const ad = JSON.parse(cibaRequest.authorizationDetails);
+						pushExtra.accessTokenClaims.authorization_details = ad;
+						pushExtra.tokenResponse = { authorization_details: ad };
+					} catch {
+						// Ignore malformed JSON — issue tokens without authorization_details
+					}
+				}
+
 				// Generate tokens, then delete request to prevent replay via polling
 				const tokenResult = await createUserTokens(
 					tokenCtx,
@@ -135,6 +151,7 @@ export function createCibaAuthorize(options: CibaOptions) {
 					undefined,
 					undefined,
 					new Date(),
+					pushExtra,
 				);
 
 				// Consume the request before push — prevents double-mint

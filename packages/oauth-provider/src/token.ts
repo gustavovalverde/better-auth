@@ -91,6 +91,7 @@ async function createJwtAccessToken(
 	audience: string | string[],
 	scopes: string[],
 	referenceId?: string,
+	extraClaims?: Record<string, unknown>,
 	overrides?: {
 		iat?: number;
 		exp?: number;
@@ -495,6 +496,7 @@ export async function createUserTokens(
 					audience,
 					scopes,
 					referenceId,
+					extra?.accessTokenClaims,
 					{
 						iat,
 						exp,
@@ -559,6 +561,7 @@ export async function createUserTokens(
 			refresh_token: refreshToken?.token,
 			scope: scopes.join(" "),
 			id_token: idToken,
+			...extra?.tokenResponse,
 		},
 		{
 			headers: {
