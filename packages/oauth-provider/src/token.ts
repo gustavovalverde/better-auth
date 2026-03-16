@@ -125,6 +125,7 @@ async function createJwtAccessToken(
 				scopes,
 				resource: ctx.body.resource,
 				referenceId,
+				clientId: client.clientId,
 				metadata: parseClientMetadata(client.metadata),
 			}),
 		);
@@ -1205,6 +1206,7 @@ async function handleClientCredentialsGrant(
 		? await opts.customAccessTokenClaims({
 				scopes: requestedScopes,
 				resource: ctx.body.resource,
+				clientId: client.clientId,
 				metadata: parseClientMetadata(client.metadata),
 			})
 		: {};

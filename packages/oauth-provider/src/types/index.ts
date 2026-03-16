@@ -497,6 +497,8 @@ export interface OAuthOptions<
 		scopes: Scopes;
 		/** The resource requesting. Provided by the token endpoint. */
 		resource?: string;
+		/** The client ID making the token request */
+		clientId?: string;
 		/** oAuthClient metadata */
 		metadata?: Record<string, any>;
 	}) => Awaitable<Record<string, any>>;
