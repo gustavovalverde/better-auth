@@ -41,6 +41,10 @@ export const schema = {
 				type: "string",
 				required: false,
 			},
+			agentClaims: {
+				type: "string",
+				required: false,
+			},
 			status: {
 				type: "string",
 				required: true,

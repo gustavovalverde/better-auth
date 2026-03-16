@@ -71,8 +71,16 @@ export function createCibaVerify() {
 						cibaRequest.authorizationDetails,
 					);
 				} catch {
-					// Stored value is corrupt — surface as null rather than 500
 					parsedAuthorizationDetails = null;
+				}
+			}
+
+			let parsedAgentClaims: unknown;
+			if (cibaRequest.agentClaims) {
+				try {
+					parsedAgentClaims = JSON.parse(cibaRequest.agentClaims);
+				} catch {
+					parsedAgentClaims = null;
 				}
 			}
 
@@ -82,6 +90,7 @@ export function createCibaVerify() {
 				scope: cibaRequest.scope,
 				binding_message: cibaRequest.bindingMessage,
 				authorization_details: parsedAuthorizationDetails,
+				agent_claims: parsedAgentClaims,
 				status: cibaRequest.status,
 				expires_at: cibaRequest.expiresAt.toISOString(),
 			});

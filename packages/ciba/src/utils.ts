@@ -40,6 +40,7 @@ export interface CibaRequest {
 	bindingMessage?: string;
 	authorizationDetails?: string;
 	resource?: string;
+	agentClaims?: string;
 	status: string;
 	deliveryMode: string;
 	clientNotificationToken?: string;

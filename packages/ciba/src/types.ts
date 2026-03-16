@@ -13,6 +13,7 @@ export interface CibaOptions {
 			scope: string;
 			bindingMessage?: string;
 			authorizationDetails?: unknown;
+			agentClaims?: string;
 			approvalUrl: string;
 		},
 		request?: Request,

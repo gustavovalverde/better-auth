@@ -32,6 +32,7 @@ export function createBcAuthorize(options: CibaOptions) {
 				client_notification_uri: z.string().url().optional(),
 				authorization_details: z.string().optional(),
 				resource: z.string().optional(),
+				agent_claims: z.string().optional(),
 				requested_expiry: z.coerce.number().int().positive().optional(),
 			}),
 			metadata: {
@@ -213,6 +214,7 @@ export function createBcAuthorize(options: CibaOptions) {
 					bindingMessage: ctx.body.binding_message,
 					authorizationDetails: ctx.body.authorization_details,
 					resource: ctx.body.resource,
+					agentClaims: ctx.body.agent_claims,
 					status: "pending",
 					deliveryMode: mode,
 					clientNotificationToken: ctx.body.client_notification_token,
@@ -235,6 +237,7 @@ export function createBcAuthorize(options: CibaOptions) {
 						scope: ctx.body.scope,
 						bindingMessage: ctx.body.binding_message,
 						authorizationDetails: parsedAuthorizationDetails,
+						agentClaims: ctx.body.agent_claims,
 						approvalUrl,
 					},
 					ctx.request,

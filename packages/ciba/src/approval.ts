@@ -139,6 +139,17 @@ export function createCibaAuthorize(options: CibaOptions) {
 					}
 				}
 
+				if (cibaRequest.agentClaims) {
+					try {
+						const ac = JSON.parse(cibaRequest.agentClaims);
+						if (ac.agent) {
+							pushExtra.accessTokenClaims.agent = ac.agent;
+						}
+					} catch {
+						// Ignore malformed agent claims
+					}
+				}
+
 				// Generate tokens, then delete request to prevent replay via polling
 				const tokenResult = await createUserTokens(
 					tokenCtx,
@@ -146,7 +157,7 @@ export function createCibaAuthorize(options: CibaOptions) {
 					client,
 					scopes,
 					session.user,
-					undefined,
+					authReqId,
 					undefined,
 					undefined,
 					undefined,

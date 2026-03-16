@@ -10,6 +10,7 @@ import type { CibaOptions } from "./types";
 import { createCibaVerify } from "./verify";
 
 export type { CibaOptions } from "./types";
+export { deliverPing } from "./push";
 
 const CIBA_GRANT_TYPE = "urn:openid:params:grant-type:ciba";
 

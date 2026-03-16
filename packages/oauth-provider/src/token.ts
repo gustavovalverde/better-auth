@@ -686,13 +686,6 @@ async function handleAuthorizationCodeGrant(
 			error: "invalid_request",
 		});
 	}
-	if (!redirect_uri) {
-		throw new APIError("BAD_REQUEST", {
-			error_description: "redirect_uri is required",
-			error: "invalid_request",
-		});
-	}
-
 	const isAuthCodeWithSecret = client_id && client_secret;
 	const isAuthCodeWithPkce = client_id && code && code_verifier;
 

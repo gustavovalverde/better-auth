@@ -155,13 +155,24 @@ export function createCibaGrantHandler(_options: CibaOptions) {
 					}
 				}
 
+				if (cibaRequest.agentClaims) {
+					try {
+						const ac = JSON.parse(cibaRequest.agentClaims);
+						if (ac.agent) {
+							extra.accessTokenClaims.agent = ac.agent;
+						}
+					} catch {
+						// Ignore malformed agent claims
+					}
+				}
+
 				return createUserTokens(
 					ctx,
 					opts,
 					client,
 					scopes,
 					user,
-					undefined,
+					authReqId,
 					undefined,
 					undefined,
 					undefined,
