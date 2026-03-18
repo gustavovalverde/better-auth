@@ -1,5 +1,5 @@
 import { BetterAuthError } from "@better-auth/core/error";
-import { createAuthMiddleware } from "better-auth/api";
+import type { OAuthProviderExtension } from "@better-auth/oauth-provider";
 import type { BetterAuthPlugin } from "better-auth/types";
 import { createCibaAuthorize, createCibaReject } from "./approval";
 import { createBcAuthorize } from "./bc-authorize";
@@ -39,27 +39,20 @@ export const ciba = (options: CibaOptions) => {
 					"The CIBA plugin requires the oauth-provider plugin",
 				);
 			}
+		},
 
-			const oauthOpts = oauthPlugin.options as { grantTypes?: string[] };
-			if (
-				oauthOpts.grantTypes &&
-				!oauthOpts.grantTypes.includes(CIBA_GRANT_TYPE)
-			) {
-				oauthOpts.grantTypes.push(CIBA_GRANT_TYPE);
-			}
-
-			// Merge with any existing custom grant handlers (supports multiple plugins)
-			const existing = (ctx as Record<string, unknown>)
-				.customGrantTypeHandlers as Record<string, unknown> | undefined;
-
-			return {
-				context: {
-					customGrantTypeHandlers: {
-						...existing,
-						[CIBA_GRANT_TYPE]: createCibaGrantHandler(options),
-					},
+		extensions: {
+			"oauth-provider": {
+				grantTypes: {
+					[CIBA_GRANT_TYPE]: createCibaGrantHandler(options),
 				},
-			};
+				grantTypeURIs: [CIBA_GRANT_TYPE],
+				metadata: ({ baseURL }) => ({
+					backchannel_authentication_endpoint: `${baseURL}/oauth2/bc-authorize`,
+					backchannel_token_delivery_modes_supported: deliveryModes,
+					backchannel_user_code_parameter_supported: false,
+				}),
+			} satisfies OAuthProviderExtension,
 		},
 
 		endpoints: {
@@ -67,42 +60,6 @@ export const ciba = (options: CibaOptions) => {
 			cibaVerify: createCibaVerify(),
 			cibaAuthorize: createCibaAuthorize(options),
 			cibaReject: createCibaReject(),
-		},
-
-		hooks: {
-			after: [
-				{
-					// Enrich discovery metadata with CIBA fields
-					matcher: (ctx) => {
-						const path = ctx.path;
-						return (
-							path === "/get-open-id-config" ||
-							path === "/get-o-auth-server-config" ||
-							path === "/.well-known/openid-configuration" ||
-							path === "/.well-known/oauth-authorization-server"
-						);
-					},
-					handler: createAuthMiddleware(async (ctx) => {
-						const body = (ctx as any).context?.returned as
-							| Record<string, unknown>
-							| undefined;
-						if (!body || typeof body !== "object") return;
-
-						const baseURL = (ctx.context as any).baseURL as string;
-
-						body.backchannel_authentication_endpoint = `${baseURL}/oauth2/bc-authorize`;
-						body.backchannel_token_delivery_modes_supported = deliveryModes;
-						body.backchannel_user_code_parameter_supported = false;
-
-						if (
-							Array.isArray(body.grant_types_supported) &&
-							!body.grant_types_supported.includes(CIBA_GRANT_TYPE)
-						) {
-							body.grant_types_supported.push(CIBA_GRANT_TYPE);
-						}
-					}),
-				},
-			],
 		},
 
 		$ERROR_CODES: CIBA_ERROR_CODES,
