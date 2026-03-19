@@ -9,8 +9,8 @@ import { schema } from "./schema";
 import type { CibaOptions } from "./types";
 import { createCibaVerify } from "./verify";
 
-export type { CibaOptions } from "./types";
 export { deliverPing } from "./push";
+export type { CibaOptions, SendNotificationData } from "./types";
 
 const CIBA_GRANT_TYPE = "urn:openid:params:grant-type:ciba";
 

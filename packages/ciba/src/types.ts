@@ -1,21 +1,36 @@
 import type { GenericEndpointContext } from "@better-auth/core";
 
+/**
+ * Data passed to the {@link CibaOptions.sendNotification} callback.
+ */
+export interface SendNotificationData {
+	userId: string;
+	authReqId: string;
+	clientName?: string;
+	scope: string;
+	bindingMessage?: string;
+	authorizationDetails?: unknown;
+	agentClaims?: string;
+	approvalUrl: string;
+	/**
+	 * Client Attestation JWT from the `OAuth-Client-Attestation` header.
+	 * @see https://www.ietf.org/archive/id/draft-ietf-oauth-attestation-based-client-auth-08.html
+	 */
+	attestationJwt?: string;
+	/**
+	 * Client Attestation PoP JWT from the `OAuth-Client-Attestation-PoP` header.
+	 * @see https://www.ietf.org/archive/id/draft-ietf-oauth-attestation-based-client-auth-08.html
+	 */
+	attestationPopJwt?: string;
+}
+
 export interface CibaOptions {
 	/**
 	 * Notify user about a pending auth request (email, SMS, push, etc.).
 	 * Called as fire-and-forget; failures are silently ignored.
 	 */
 	sendNotification: (
-		data: {
-			userId: string;
-			authReqId: string;
-			clientName?: string;
-			scope: string;
-			bindingMessage?: string;
-			authorizationDetails?: unknown;
-			agentClaims?: string;
-			approvalUrl: string;
-		},
+		data: SendNotificationData,
 		request?: Request,
 	) => Promise<void>;
 

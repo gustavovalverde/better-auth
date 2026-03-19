@@ -228,6 +228,11 @@ export function createBcAuthorize(options: CibaOptions) {
 			const baseURL = ctx.context.baseURL;
 			const approvalUrl = `${baseURL}${approvalPage}?auth_req_id=${encodeURIComponent(authReqId)}`;
 
+			const attestationJwt =
+				ctx.request?.headers.get("OAuth-Client-Attestation") || undefined;
+			const attestationPopJwt =
+				ctx.request?.headers.get("OAuth-Client-Attestation-PoP") || undefined;
+
 			options
 				.sendNotification(
 					{
@@ -239,6 +244,8 @@ export function createBcAuthorize(options: CibaOptions) {
 						authorizationDetails: parsedAuthorizationDetails,
 						agentClaims: ctx.body.agent_claims,
 						approvalUrl,
+						attestationJwt,
+						attestationPopJwt,
 					},
 					ctx.request,
 				)
