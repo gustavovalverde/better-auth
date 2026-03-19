@@ -259,6 +259,10 @@ export const oauthProvider = <O extends OAuthOptions<Scope[]>>(options: O) => {
 			>[] = [];
 			const oauthExtraAuthMethods: string[] = [];
 
+			const extensionClientAuthStrategies: NonNullable<
+				import("./types/extension").OAuthProviderExtension["clientAuthStrategies"]
+			> = {};
+
 			for (const ext of extensions) {
 				if (ext.grantTypes) {
 					Object.assign(oauthGrantHandlers, ext.grantTypes);
@@ -275,6 +279,12 @@ export const oauthProvider = <O extends OAuthOptions<Scope[]>>(options: O) => {
 				if (ext.tokenEndpointAuthMethods) {
 					oauthExtraAuthMethods.push(...ext.tokenEndpointAuthMethods);
 				}
+				if (ext.clientAuthStrategies) {
+					Object.assign(
+						extensionClientAuthStrategies,
+						ext.clientAuthStrategies,
+					);
+				}
 			}
 
 			// Merge extension grant URIs into the allowlist
@@ -287,6 +297,14 @@ export const oauthProvider = <O extends OAuthOptions<Scope[]>>(options: O) => {
 					]),
 					...extensionGrantURIs,
 				];
+			}
+
+			// Merge extension client auth strategies (user config wins)
+			if (Object.keys(extensionClientAuthStrategies).length > 0) {
+				opts.clientAuthStrategies = {
+					...extensionClientAuthStrategies,
+					...opts.clientAuthStrategies,
+				};
 			}
 
 			return {
@@ -437,35 +455,33 @@ export const oauthProvider = <O extends OAuthOptions<Scope[]>>(options: O) => {
 				"/oauth2/authorize",
 				{
 					method: "GET",
-					query: z.object({
-						response_type: z.enum(["code"]).optional(),
-						client_id: z.string(),
-						redirect_uri: SafeUrlSchema.optional(),
-						scope: z.string().optional(),
-						state: z.string().optional(),
-						// PAR: when request_uri is present, other params are resolved from the stored request
-						request_uri: z.string().optional(),
-						// OIDC4IDA / OIDC4VCI pass-through parameters.
-						// Must be included in schema to ensure they are preserved
-						// in ctx.query and later persisted with the authorization code.
-						claims: z.string().optional(),
-						authorization_details: z.string().optional(),
-						issuer_state: z.string().optional(),
-						code_challenge: z.string().optional(),
-						code_challenge_method: z.enum(["S256"]).optional(),
-						nonce: z.string().optional(),
-						prompt: z
-							.enum([
-								"none",
-								"consent",
-								"login",
-								"create",
-								"select_account",
-								"login consent",
-								"select_account consent",
-							])
-							.optional(),
-					}),
+					query: z
+						.object({
+							response_type: z.enum(["code"]).optional(),
+							client_id: z.string(),
+							redirect_uri: SafeUrlSchema.optional(),
+							scope: z.string().optional(),
+							state: z.string().optional(),
+							// PAR: when request_uri is present, other params are resolved from the stored request
+							request_uri: z.string().optional(),
+							// RFC 9396 authorization_details
+							authorization_details: z.string().optional(),
+							code_challenge: z.string().optional(),
+							code_challenge_method: z.enum(["S256"]).optional(),
+							nonce: z.string().optional(),
+							prompt: z
+								.enum([
+									"none",
+									"consent",
+									"login",
+									"create",
+									"select_account",
+									"login consent",
+									"select_account consent",
+								])
+								.optional(),
+						})
+						.passthrough(),
 					metadata: {
 						openapi: {
 							description: "Authorize an OAuth2 request",

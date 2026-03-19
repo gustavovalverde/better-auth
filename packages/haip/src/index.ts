@@ -1,14 +1,15 @@
+import type { OAuthProviderExtension } from "@better-auth/oauth-provider";
 import type { BetterAuthPlugin } from "better-auth";
-import {
-	APIError,
-	createAuthEndpoint,
-	createAuthMiddleware,
-} from "better-auth/api";
+import { APIError, createAuthEndpoint } from "better-auth/api";
 import * as z from "zod";
 import { storePushedRequest } from "./par";
 import { schema } from "./schema";
 import type { HaipOptions } from "./types";
 import { createVpSession, resolveVpSession } from "./vp-initiation";
+import {
+	createWalletAttestationStrategy,
+	WALLET_ATTESTATION_TYPE,
+} from "./wallet-attestation";
 
 declare module "@better-auth/core" {
 	interface BetterAuthPluginRegistry<AuthOptions, Options> {
@@ -51,6 +52,24 @@ export function haip(options?: HaipOptions) {
 					);
 				}
 			}
+		},
+		extensions: {
+			"oauth-provider": {
+				metadata: ({ baseURL }) => ({
+					pushed_authorization_request_endpoint: `${baseURL}/oauth2/par`,
+					require_pushed_authorization_requests: options?.requirePar ?? true,
+					dpop_signing_alg_values_supported: options?.dpopSigningAlgValues ?? [
+						"ES256",
+					],
+					authorization_details_types_supported: ["openid_credential"],
+				}),
+				tokenEndpointAuthMethods: [WALLET_ATTESTATION_TYPE],
+				clientAuthStrategies: {
+					[WALLET_ATTESTATION_TYPE]: createWalletAttestationStrategy(
+						options?.walletAttestation,
+					),
+				},
+			} satisfies OAuthProviderExtension,
 		},
 		endpoints: {
 			haipPar: createAuthEndpoint(
@@ -138,30 +157,6 @@ export function haip(options?: HaipOptions) {
 					return session;
 				},
 			),
-		},
-		hooks: {
-			after: [
-				{
-					matcher: (ctx) =>
-						ctx.path === "/.well-known/openid-configuration" ||
-						ctx.path === "/.well-known/oauth-authorization-server",
-					handler: createAuthMiddleware(async (ctx) => {
-						const returned = ctx.context.returned as
-							| Record<string, unknown>
-							| undefined;
-						if (!returned || typeof returned !== "object") return;
-						ctx.context.returned = {
-							...returned,
-							pushed_authorization_request_endpoint: `${ctx.context.baseURL}/oauth2/par`,
-							require_pushed_authorization_requests:
-								options?.requirePar ?? true,
-							dpop_signing_alg_values_supported:
-								options?.dpopSigningAlgValues ?? ["ES256"],
-							authorization_details_types_supported: ["openid_credential"],
-						};
-					}),
-				},
-			],
 		},
 	} satisfies BetterAuthPlugin;
 }

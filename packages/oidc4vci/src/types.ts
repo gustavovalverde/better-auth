@@ -1,16 +1,9 @@
+import type { StoreTokenType } from "@better-auth/oauth-provider";
 import type { User } from "better-auth/types";
 
-export type Awaitable<T> = T | Promise<T>;
+export type { StoreTokenType };
 
-export type StoreTokenType =
-	| "access_token"
-	| "refresh_token"
-	| "authorization_code"
-	| "pre_authorized_code"
-	| "tx_code"
-	| "c_nonce"
-	| "credential_identifier"
-	| "transaction_id";
+export type Awaitable<T> = T | Promise<T>;
 
 export type StoreTokens =
 	| "hashed"

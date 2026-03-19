@@ -13,4 +13,8 @@ export type HaipOptions = {
 	parExpiresInSeconds?: number;
 	/** VP authorization request lifetime in seconds. Default: 300 */
 	vpRequestExpiresInSeconds?: number;
+	/** Wallet attestation strategy options */
+	walletAttestation?: {
+		trustedIssuers?: string[];
+	};
 };

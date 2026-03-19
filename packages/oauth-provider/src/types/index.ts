@@ -16,11 +16,7 @@ export type StoreTokenType =
 	| "access_token"
 	| "refresh_token"
 	| "authorization_code"
-	| "pre_authorized_code"
-	| "tx_code"
-	| "c_nonce"
-	| "credential_identifier"
-	| "transaction_id";
+	| (string & {});
 
 type InternallySupportedScopes =
 	| "openid"
@@ -883,43 +879,14 @@ export interface OAuthAuthorizationQuery {
  * It is stored in JSON to prevent
  * direct searches by field on the db
  */
-export type VerificationValue =
-	| {
-			type: "authorization_code";
-			query: OAuthAuthorizationQuery;
-			sessionId: string;
-			userId: string;
-			referenceId?: string;
-			authTime?: number;
-	  }
-	| {
-			/**
-			 * OIDC4VCI pre-authorized code value.
-			 *
-			 * Stored in the core verification table so the oauth-provider token endpoint
-			 * can validate and redeem it without relying on any extra tables.
-			 */
-			type: "pre_authorized_code";
-			clientId: string;
-			userId: string;
-			/**
-			 * Credential configuration requested/authorized by the offer.
-			 * v1 keeps this to a single configuration id to stay KISS.
-			 */
-			credentialConfigurationId: string;
-			/**
-			 * Optional issuer_state for offer correlation.
-			 */
-			issuerState?: string;
-			/**
-			 * Optional, hashed server-side. If present, token exchange must provide a matching tx_code.
-			 */
-			txCodeHash?: string;
-			/**
-			 * Optional serialized authorization_details to carry through to the access token (v1).
-			 */
-			authorizationDetails?: unknown;
-	  };
+export type VerificationValue = {
+	type: "authorization_code";
+	query: OAuthAuthorizationQuery;
+	sessionId: string;
+	userId: string;
+	referenceId?: string;
+	authTime?: number;
+};
 
 /**
  * Client registered values as used within the plugin

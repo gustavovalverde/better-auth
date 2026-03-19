@@ -1,6 +1,6 @@
 import type { GenericEndpointContext } from "@better-auth/core";
 import { APIError } from "better-auth/api";
-import { constantTimeEqual, generateRandomString } from "better-auth/crypto";
+import { generateRandomString } from "better-auth/crypto";
 import { generateCodeChallenge } from "better-auth/oauth2";
 import { signJWT, toExpJWT } from "better-auth/plugins";
 import type { Session, User } from "better-auth/types";
@@ -34,7 +34,7 @@ import {
 export async function tokenEndpoint(
 	ctx: GenericEndpointContext,
 	opts: OAuthOptions<Scope[]>,
-): Promise<TokenResponse> {
+) {
 	const grantType: GrantType | undefined = ctx.body?.grant_type;
 
 	if (opts.grantTypes && grantType && !opts.grantTypes.includes(grantType)) {
@@ -51,8 +51,6 @@ export async function tokenEndpoint(
 			return handleClientCredentialsGrant(ctx, opts);
 		case "refresh_token":
 			return handleRefreshTokenGrant(ctx, opts);
-		case "urn:ietf:params:oauth:grant-type:pre-authorized_code":
-			return handlePreAuthorizedCodeGrant(ctx, opts);
 		case undefined:
 			throw new APIError("BAD_REQUEST", {
 				error_description: "missing required grant_type",
@@ -89,12 +87,12 @@ async function createJwtAccessToken(
 	audience: string | string[],
 	scopes: string[],
 	referenceId?: string,
-	extraClaims?: Record<string, unknown>,
 	overrides?: {
 		iat?: number;
 		exp?: number;
 		sid?: string;
 	},
+	extraClaims?: Record<string, unknown>,
 ) {
 	const iat = overrides?.iat ?? Math.floor(Date.now() / 1000);
 	const exp = overrides?.exp ?? iat + (opts.accessTokenExpiresIn ?? 3600);
@@ -528,7 +526,6 @@ export async function createUserTokens(
 					audience,
 					scopes,
 					referenceId,
-					extra?.accessTokenClaims,
 					{
 						iat,
 						exp,
@@ -595,277 +592,6 @@ export async function createUserTokens(
 		scope: scopes.join(" "),
 		id_token: idToken,
 	};
-}
-
-async function checkPreAuthorizedCodeValue(
-	ctx: GenericEndpointContext,
-	opts: OAuthOptions<Scope[]>,
-	code: string,
-	clientId: string | undefined,
-	txCode?: string,
-) {
-	const verification = await ctx.context.internalAdapter.findVerificationValue(
-		await storeToken(opts.storeTokens, code, "pre_authorized_code"),
-	);
-	const verificationValue = verification
-		? JSON.parse(verification.value)
-		: null;
-
-	if (!verification) {
-		throw new APIError("UNAUTHORIZED", {
-			error_description: "Invalid pre-authorized code",
-			error: "invalid_grant",
-		});
-	}
-
-	if (!verification.expiresAt || verification.expiresAt < new Date()) {
-		// Best-effort cleanup for expired codes.
-		await ctx.context.internalAdapter.deleteVerificationByIdentifier(
-			verification.identifier,
-		);
-		throw new APIError("UNAUTHORIZED", {
-			error_description: "pre-authorized code expired",
-			error: "invalid_grant",
-		});
-	}
-
-	if (!verificationValue || verificationValue.type !== "pre_authorized_code") {
-		throw new APIError("UNAUTHORIZED", {
-			error_description: "incorrect verification type",
-			error: "invalid_grant",
-		});
-	}
-
-	if (clientId && verificationValue.clientId !== clientId) {
-		throw new APIError("UNAUTHORIZED", {
-			error_description: "invalid client_id",
-			error: "invalid_client",
-		});
-	}
-
-	if (verificationValue.txCodeHash) {
-		if (!txCode) {
-			throw new APIError("UNAUTHORIZED", {
-				error_description: "tx_code required",
-				error: "invalid_grant",
-			});
-		}
-		const txCodeHash = await storeToken(opts.storeTokens, txCode, "tx_code");
-		if (!constantTimeEqual(txCodeHash, verificationValue.txCodeHash)) {
-			throw new APIError("UNAUTHORIZED", {
-				error_description: "invalid tx_code",
-				error: "invalid_grant",
-			});
-		}
-	}
-
-	// Delete used code (one-time use) only after all checks pass.
-	await ctx.context.internalAdapter.deleteVerificationByIdentifier(
-		verification.identifier,
-	);
-
-	return verificationValue as {
-		type: "pre_authorized_code";
-		clientId: string;
-		userId: string;
-		credentialConfigurationId: string;
-		issuerState?: string;
-		authorizationDetails?: unknown;
-		credentialAudience?: string;
-	};
-}
-
-async function createCNonce(
-	ctx: GenericEndpointContext,
-	opts: OAuthOptions<Scope[]>,
-	data: {
-		userId: string;
-		clientId: string;
-		expiresInSeconds: number;
-	},
-) {
-	const nonce = generateRandomString(32, "a-z", "A-Z", "0-9");
-	const iat = Math.floor(Date.now() / 1000);
-	const exp = iat + data.expiresInSeconds;
-
-	await ctx.context.internalAdapter.createVerificationValue({
-		identifier: await storeToken(opts.storeTokens, nonce, "c_nonce"),
-		value: JSON.stringify({
-			type: "oidc4vci_c_nonce",
-			userId: data.userId,
-			clientId: data.clientId,
-		}),
-		createdAt: new Date(iat * 1000),
-		updatedAt: new Date(iat * 1000),
-		expiresAt: new Date(exp * 1000),
-	});
-
-	return { nonce, expiresIn: data.expiresInSeconds };
-}
-
-async function handlePreAuthorizedCodeGrant(
-	ctx: GenericEndpointContext,
-	opts: OAuthOptions<Scope[]>,
-): Promise<TokenResponse> {
-	let { client_id, client_secret, resource, tx_code } = ctx.body as {
-		client_id?: string;
-		client_secret?: string;
-		resource?: string;
-		tx_code?: string;
-	};
-	const preAuthorizedCode = (ctx.body as { "pre-authorized_code"?: string })[
-		"pre-authorized_code"
-	];
-
-	const authorization = ctx.request?.headers.get("authorization") || null;
-
-	// Convert basic authorization
-	if (authorization?.startsWith("Basic ")) {
-		const res = basicToClientCredentials(authorization);
-		client_id = res?.client_id;
-		client_secret = res?.client_secret;
-	}
-
-	if (!preAuthorizedCode) {
-		throw new APIError("BAD_REQUEST", {
-			error_description: "pre-authorized_code is required",
-			error: "invalid_request",
-		});
-	}
-
-	// Validate and redeem pre-authorized code
-	const value = await checkPreAuthorizedCodeValue(
-		ctx,
-		opts,
-		preAuthorizedCode,
-		client_id,
-		tx_code,
-	);
-
-	const effectiveClientId = client_id ?? value.clientId;
-	if (!effectiveClientId) {
-		throw new APIError("BAD_REQUEST", {
-			error_description: "client_id is required",
-			error: "invalid_request",
-		});
-	}
-
-	// Validate client (public client allowed; confidential requires secret)
-	const preAuthAssertionType: string | undefined =
-		ctx.body?.client_assertion_type;
-	const preAuthAssertion: string | undefined = ctx.body?.client_assertion;
-	const client = await validateClientCredentials(
-		ctx,
-		opts,
-		effectiveClientId,
-		client_secret,
-		// v1: OIDC4VCI tokens are used to call credential endpoint; keep scopes minimal.
-		["openid"],
-		preAuthAssertionType && preAuthAssertion
-			? { assertionType: preAuthAssertionType, assertion: preAuthAssertion }
-			: undefined,
-	);
-
-	// Ensure JWT access token by defaulting audience to the credential endpoint
-	if (!resource) {
-		ctx.body.resource =
-			value.credentialAudience ?? `${ctx.context.baseURL}/oidc4vci/credential`;
-	} else {
-		ctx.body.resource = resource;
-	}
-
-	const user = await ctx.context.internalAdapter.findUserById(value.userId);
-	if (!user) {
-		throw new APIError("BAD_REQUEST", {
-			error_description: "user not found",
-			error: "invalid_user",
-		});
-	}
-
-	// v1: c_nonce is required so the credential endpoint can require proof binding
-	const cNonce = await createCNonce(ctx, opts, {
-		userId: user.id,
-		clientId: client.clientId,
-		expiresInSeconds: 300,
-	});
-
-	const credentialIdentifier = generateRandomString(32, "a-z", "A-Z", "0-9");
-	const now = new Date();
-	const credentialIdentifierExpiresInSeconds =
-		opts.accessTokenExpiresIn ?? 3600;
-	const credentialIdentifierExpiresAt = new Date(
-		now.getTime() + credentialIdentifierExpiresInSeconds * 1000,
-	);
-	await ctx.context.internalAdapter.createVerificationValue({
-		identifier: await storeToken(
-			opts.storeTokens,
-			credentialIdentifier,
-			"credential_identifier",
-		),
-		value: JSON.stringify({
-			type: "oidc4vci_credential_identifier",
-			userId: user.id,
-			clientId: client.clientId,
-			credentialConfigurationId: value.credentialConfigurationId,
-			issuerState: value.issuerState,
-		}),
-		createdAt: now,
-		updatedAt: now,
-		expiresAt: credentialIdentifierExpiresAt,
-	});
-
-	const rawAuthorizationDetails = Array.isArray(value.authorizationDetails)
-		? value.authorizationDetails
-		: ([
-				{
-					type: "openid_credential",
-					credential_configuration_id: value.credentialConfigurationId,
-				},
-			] as Record<string, unknown>[]);
-
-	const authorizationDetails = rawAuthorizationDetails.map((detail) => {
-		if (
-			!detail ||
-			typeof detail !== "object" ||
-			(detail as { type?: string }).type !== "openid_credential"
-		) {
-			return detail;
-		}
-		const typed = detail as Record<string, unknown>;
-		return {
-			...typed,
-			credential_configuration_id:
-				typed.credential_configuration_id ?? value.credentialConfigurationId,
-			credential_identifiers: typed.credential_identifiers ?? [
-				credentialIdentifier,
-			],
-		};
-	});
-
-	return createUserTokens(
-		ctx,
-		opts,
-		client,
-		["openid"],
-		user,
-		undefined,
-		undefined,
-		undefined,
-		undefined,
-		undefined,
-		{
-			accessTokenClaims: {
-				authorization_details: authorizationDetails,
-				credential_configuration_id: value.credentialConfigurationId,
-				issuer_state: value.issuerState,
-			},
-			tokenResponse: {
-				authorization_details: authorizationDetails,
-				c_nonce: cNonce.nonce,
-				c_nonce_expires_in: cNonce.expiresIn,
-			},
-		},
-	);
 }
 
 /** Checks verification value */
@@ -947,7 +673,7 @@ async function checkVerificationValue(
 async function handleAuthorizationCodeGrant(
 	ctx: GenericEndpointContext,
 	opts: OAuthOptions<Scope[]>,
-): Promise<TokenResponse> {
+) {
 	let {
 		client_id,
 		client_secret,
@@ -1176,7 +902,7 @@ async function handleAuthorizationCodeGrant(
 async function handleClientCredentialsGrant(
 	ctx: GenericEndpointContext,
 	opts: OAuthOptions<Scope[]>,
-): Promise<TokenResponse> {
+) {
 	let {
 		client_id,
 		client_secret,
@@ -1317,7 +1043,7 @@ async function handleClientCredentialsGrant(
 		expires_at: exp,
 		token_type: "Bearer",
 		scope: requestedScopes.join(" "),
-	} satisfies TokenResponse;
+	};
 }
 
 /**
@@ -1329,7 +1055,7 @@ async function handleClientCredentialsGrant(
 async function handleRefreshTokenGrant(
 	ctx: GenericEndpointContext,
 	opts: OAuthOptions<Scope[]>,
-): Promise<TokenResponse> {
+) {
 	let {
 		client_id,
 		client_secret,
