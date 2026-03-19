@@ -654,14 +654,30 @@ async function checkVerificationValue(
 			error: "invalid_user",
 		});
 	}
-	if (
-		verificationValue.query?.redirect_uri &&
-		verificationValue.query?.redirect_uri !== redirect_uri
-	) {
-		throw new APIError("BAD_REQUEST", {
-			error_description: "missing verification redirect_uri",
-			error: "invalid_request",
-		});
+	if (verificationValue.query?.redirect_uri && redirect_uri) {
+		const storedUri = verificationValue.query.redirect_uri;
+		let match = storedUri === redirect_uri;
+		if (!match) {
+			try {
+				const registered = new URL(storedUri);
+				const requested = new URL(redirect_uri);
+				// RFC 8252 §7.3: loopback IPs allow any port
+				if (
+					(registered.hostname === "127.0.0.1" ||
+						registered.hostname === "[::1]") &&
+					registered.hostname === requested.hostname &&
+					registered.pathname === requested.pathname &&
+					registered.protocol === requested.protocol
+				)
+					match = true;
+			} catch {}
+		}
+		if (!match) {
+			throw new APIError("BAD_REQUEST", {
+				error_description: "redirect_uri mismatch",
+				error: "invalid_request",
+			});
+		}
 	}
 
 	return verificationValue;
