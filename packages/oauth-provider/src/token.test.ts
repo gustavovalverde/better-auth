@@ -2482,3 +2482,536 @@ describe("PAR scope preservation", async () => {
 		expect(tokens.data?.scope).toBe(requestedScopes.join(" "));
 	});
 });
+
+describe("oauth token - custom grant types via extensions", async () => {
+	const authServerBaseUrl = "http://localhost:3000";
+	const CUSTOM_GRANT = "urn:test:custom-grant";
+	const CUSTOM_GRANT_B = "urn:test:custom-grant-b";
+
+	const customGrantPlugin = {
+		id: "custom-grant-plugin",
+		dependencies: ["oauth-provider"],
+		extensions: {
+			"oauth-provider": {
+				grantTypes: {
+					[CUSTOM_GRANT]: async (ctx) => {
+						return ctx.json({
+							access_token: "custom-token-value",
+							token_type: "Bearer",
+							expires_in: 3600,
+							scope: "custom",
+							custom_field: ctx.body?.custom_param ?? "none",
+						});
+					},
+				},
+				grantTypeURIs: [CUSTOM_GRANT],
+			},
+		},
+	} satisfies import("better-auth/types").BetterAuthPlugin;
+
+	const secondGrantPlugin = {
+		id: "second-grant-plugin",
+		dependencies: ["oauth-provider"],
+		extensions: {
+			"oauth-provider": {
+				grantTypes: {
+					[CUSTOM_GRANT_B]: async (ctx) => {
+						return ctx.json({
+							access_token: "second-custom-token",
+							token_type: "Bearer",
+							expires_in: 1800,
+							scope: "second",
+						});
+					},
+				},
+				grantTypeURIs: [CUSTOM_GRANT_B],
+			},
+		},
+	} satisfies import("better-auth/types").BetterAuthPlugin;
+
+	const { auth, signInWithTestUser } = await getTestInstance({
+		baseURL: authServerBaseUrl,
+		plugins: [
+			jwt({
+				jwt: {
+					issuer: authServerBaseUrl,
+				},
+			}),
+			oauthProvider({
+				loginPage: "/login",
+				consentPage: "/consent",
+				silenceWarnings: {
+					oauthAuthServerConfig: true,
+					openidConfig: true,
+				},
+			}),
+			customGrantPlugin,
+			secondGrantPlugin,
+		],
+	});
+
+	const { headers } = await signInWithTestUser();
+	let oauthClient: OAuthClient | null;
+
+	beforeAll(async () => {
+		const response = await auth.api.adminCreateOAuthClient({
+			headers,
+			body: {
+				redirect_uris: ["http://localhost:5000/callback"],
+				skip_consent: true,
+			},
+		});
+		oauthClient = response;
+	});
+
+	it("should dispatch to a custom grant handler", async () => {
+		const response = await auth.handler(
+			new Request(`${authServerBaseUrl}/api/auth/oauth2/token`, {
+				method: "POST",
+				headers: {
+					"content-type": "application/x-www-form-urlencoded",
+					authorization: `Basic ${btoa(`${oauthClient!.client_id}:${oauthClient!.client_secret}`)}`,
+				},
+				body: new URLSearchParams({
+					grant_type: CUSTOM_GRANT,
+				}).toString(),
+			}),
+		);
+
+		expect(response.status).toBe(200);
+		const body = await response.json();
+		expect(body.access_token).toBe("custom-token-value");
+		expect(body.token_type).toBe("Bearer");
+		expect(body.scope).toBe("custom");
+	});
+
+	it("should pass through extra body fields", async () => {
+		const response = await auth.handler(
+			new Request(`${authServerBaseUrl}/api/auth/oauth2/token`, {
+				method: "POST",
+				headers: {
+					"content-type": "application/x-www-form-urlencoded",
+					authorization: `Basic ${btoa(`${oauthClient!.client_id}:${oauthClient!.client_secret}`)}`,
+				},
+				body: new URLSearchParams({
+					grant_type: CUSTOM_GRANT,
+					custom_param: "my-custom-value",
+				}).toString(),
+			}),
+		);
+
+		expect(response.status).toBe(200);
+		const body = await response.json();
+		expect(body.custom_field).toBe("my-custom-value");
+	});
+
+	it("should reject unknown grant types not in allowlist", async () => {
+		const response = await auth.handler(
+			new Request(`${authServerBaseUrl}/api/auth/oauth2/token`, {
+				method: "POST",
+				headers: {
+					"content-type": "application/x-www-form-urlencoded",
+					authorization: `Basic ${btoa(`${oauthClient!.client_id}:${oauthClient!.client_secret}`)}`,
+				},
+				body: new URLSearchParams({
+					grant_type: "urn:unknown:not-registered",
+				}).toString(),
+			}),
+		);
+
+		expect(response.status).toBe(400);
+		const body = await response.json();
+		expect(body.error).toBe("unsupported_grant_type");
+	});
+
+	it("should support multiple plugins each registering different grant types", async () => {
+		const response = await auth.handler(
+			new Request(`${authServerBaseUrl}/api/auth/oauth2/token`, {
+				method: "POST",
+				headers: {
+					"content-type": "application/x-www-form-urlencoded",
+					authorization: `Basic ${btoa(`${oauthClient!.client_id}:${oauthClient!.client_secret}`)}`,
+				},
+				body: new URLSearchParams({
+					grant_type: CUSTOM_GRANT_B,
+				}).toString(),
+			}),
+		);
+
+		expect(response.status).toBe(200);
+		const body = await response.json();
+		expect(body.access_token).toBe("second-custom-token");
+		expect(body.scope).toBe("second");
+	});
+
+	it("should include extension grantTypeURIs in discovery metadata", async () => {
+		const metadata = (await auth.api.getOAuthServerConfig()) as Record<
+			string,
+			unknown
+		>;
+		expect(metadata.grant_types_supported as string[]).toContain(CUSTOM_GRANT);
+		expect(metadata.grant_types_supported as string[]).toContain(
+			CUSTOM_GRANT_B,
+		);
+		expect(metadata.grant_types_supported as string[]).toContain(
+			"authorization_code",
+		);
+	});
+});
+
+describe("oauth token - extension metadata contributions", async () => {
+	const authServerBaseUrl = "http://localhost:3000";
+
+	const metadataPlugin = {
+		id: "metadata-plugin",
+		dependencies: ["oauth-provider"],
+		extensions: {
+			"oauth-provider": {
+				metadata: ({ baseURL }) => ({
+					backchannel_authentication_endpoint: `${baseURL}/oauth2/bc-authorize`,
+					custom_flag: true,
+				}),
+				tokenEndpointAuthMethods: ["private_key_jwt"],
+			},
+		},
+	} satisfies import("better-auth/types").BetterAuthPlugin;
+
+	const secondMetadataPlugin = {
+		id: "second-metadata-plugin",
+		dependencies: ["oauth-provider"],
+		extensions: {
+			"oauth-provider": {
+				metadata: () => ({
+					pushed_authorization_request_endpoint: "/par",
+				}),
+			},
+		},
+	} satisfies import("better-auth/types").BetterAuthPlugin;
+
+	const { auth } = await getTestInstance({
+		baseURL: authServerBaseUrl,
+		plugins: [
+			jwt({ jwt: { issuer: authServerBaseUrl } }),
+			oauthProvider({
+				loginPage: "/login",
+				consentPage: "/consent",
+				silenceWarnings: {
+					oauthAuthServerConfig: true,
+					openidConfig: true,
+				},
+			}),
+			metadataPlugin,
+			secondMetadataPlugin,
+		],
+	});
+
+	it("should include extension metadata in discovery response", async () => {
+		const metadata = (await auth.api.getOAuthServerConfig()) as Record<
+			string,
+			unknown
+		>;
+		expect(metadata.backchannel_authentication_endpoint).toContain(
+			"/oauth2/bc-authorize",
+		);
+		expect(metadata.custom_flag).toBe(true);
+	});
+
+	it("should merge metadata from multiple plugins", async () => {
+		const metadata = (await auth.api.getOAuthServerConfig()) as Record<
+			string,
+			unknown
+		>;
+		expect(metadata.backchannel_authentication_endpoint).toBeDefined();
+		expect(metadata.pushed_authorization_request_endpoint).toBe("/par");
+	});
+
+	it("should merge extension tokenEndpointAuthMethods", async () => {
+		const metadata = (await auth.api.getOAuthServerConfig()) as Record<
+			string,
+			unknown
+		>;
+		expect(metadata.token_endpoint_auth_methods_supported).toContain(
+			"private_key_jwt",
+		);
+		expect(metadata.token_endpoint_auth_methods_supported).toContain(
+			"client_secret_basic",
+		);
+	});
+});
+
+describe("oauth token - extension token claims", async () => {
+	const authServerBaseUrl = "http://localhost:3000";
+	const rpBaseUrl = "http://localhost:5000";
+	const validAudience = "https://myapi.example.com";
+
+	const claimsPlugin = {
+		id: "claims-plugin",
+		dependencies: ["oauth-provider"],
+		extensions: {
+			"oauth-provider": {
+				tokenClaims: {
+					access: async () => ({
+						custom_access_claim: "from-extension",
+						overridable_claim: "extension-value",
+					}),
+					id: async () => ({
+						verified_claims: { trust_framework: "eidas" },
+					}),
+				},
+			},
+		},
+	} satisfies import("better-auth/types").BetterAuthPlugin;
+
+	const { auth, signInWithTestUser, customFetchImpl } = await getTestInstance({
+		baseURL: authServerBaseUrl,
+		plugins: [
+			jwt({ jwt: { issuer: authServerBaseUrl } }),
+			oauthProvider({
+				loginPage: "/login",
+				consentPage: "/consent",
+				validAudiences: [validAudience],
+				silenceWarnings: {
+					oauthAuthServerConfig: true,
+					openidConfig: true,
+				},
+				customAccessTokenClaims: async () => ({
+					overridable_claim: "user-wins",
+				}),
+			}),
+			claimsPlugin,
+		],
+	});
+
+	const { headers } = await signInWithTestUser();
+	const _client = createAuthClient({
+		plugins: [oauthProviderClient(), jwtClient()],
+		baseURL: authServerBaseUrl,
+		fetchOptions: { customFetchImpl, headers },
+	});
+	let oauthClient: OAuthClient | null;
+
+	const providerId = "test-claims";
+	const redirectUri = `${rpBaseUrl}/api/auth/oauth2/callback/${providerId}`;
+
+	beforeAll(async () => {
+		oauthClient = await auth.api.adminCreateOAuthClient({
+			headers,
+			body: {
+				redirect_uris: [redirectUri],
+				skip_consent: true,
+			},
+		});
+	});
+
+	async function getTokensViaAuthCode(scopes: string[], resource?: string) {
+		const codeVerifier = generateRandomString(32);
+		const url = await createAuthorizationURL({
+			id: "test-claims",
+			options: {
+				clientId: oauthClient!.client_id,
+				clientSecret: oauthClient!.client_secret!,
+				redirectURI: redirectUri,
+			},
+			redirectURI: "",
+			authorizationEndpoint: `${authServerBaseUrl}/api/auth/oauth2/authorize`,
+			state: "test-state",
+			scopes,
+			codeVerifier,
+			resource,
+		});
+
+		const authRes = await auth.handler(
+			new Request(url.toString(), { headers }),
+		);
+		const location = authRes.headers.get("location")!;
+		const code = new URL(location).searchParams.get("code")!;
+
+		const { body: tokenBody, headers: tokenHeaders } =
+			createAuthorizationCodeRequest({
+				code,
+				codeVerifier,
+				redirectURI: redirectUri,
+				resource,
+				options: {
+					clientId: oauthClient!.client_id,
+					clientSecret: oauthClient!.client_secret!,
+					redirectURI: redirectUri,
+				},
+			});
+
+		const tokenRes = await auth.handler(
+			new Request(`${authServerBaseUrl}/api/auth/oauth2/token`, {
+				method: "POST",
+				headers: tokenHeaders,
+				body: tokenBody,
+			}),
+		);
+		expect(tokenRes.status).toBe(200);
+		return tokenRes.json();
+	}
+
+	it("should include extension claims in JWT access tokens", async () => {
+		const tokenBody = await getTokensViaAuthCode(["openid"], validAudience);
+
+		const decoded = decodeJwt(tokenBody.access_token);
+		expect(decoded.custom_access_claim).toBe("from-extension");
+	});
+
+	it("should let user customAccessTokenClaims override extension claims", async () => {
+		const tokenBody = await getTokensViaAuthCode(["openid"], validAudience);
+
+		const decoded = decodeJwt(tokenBody.access_token);
+		expect(decoded.overridable_claim).toBe("user-wins");
+	});
+
+	it("should include extension claims in ID tokens", async () => {
+		const tokenBody = await getTokensViaAuthCode(["openid"]);
+
+		expect(tokenBody.id_token).toBeDefined();
+		const decoded = decodeJwt(tokenBody.id_token);
+		expect(decoded.verified_claims).toEqual({
+			trust_framework: "eidas",
+		});
+	});
+});
+
+describe("id token claim override security", async () => {
+	const authServerBaseUrl = "http://localhost:3000";
+	const rpBaseUrl = "http://localhost:5000";
+	const { auth, signInWithTestUser, customFetchImpl } = await getTestInstance({
+		baseURL: authServerBaseUrl,
+		plugins: [
+			jwt({
+				jwt: {
+					issuer: authServerBaseUrl,
+				},
+			}),
+			oauthProvider({
+				loginPage: "/login",
+				consentPage: "/consent",
+				silenceWarnings: {
+					oauthAuthServerConfig: true,
+					openidConfig: true,
+				},
+				customIdTokenClaims: () => ({
+					acr: "silver",
+					auth_time: 0,
+					sub: "evil",
+					iss: "https://evil.com",
+					aud: "evil-client",
+					iat: 0,
+					exp: 0,
+				}),
+			}),
+		],
+	});
+
+	const { headers } = await signInWithTestUser();
+	const client = createAuthClient({
+		plugins: [oauthProviderClient(), jwtClient()],
+		baseURL: authServerBaseUrl,
+		fetchOptions: {
+			customFetchImpl,
+			headers,
+		},
+	});
+
+	let oauthClient: OAuthClient | null;
+	const providerId = "test";
+	const redirectUri = `${rpBaseUrl}/api/auth/oauth2/callback/${providerId}`;
+	const state = "123";
+
+	beforeAll(async () => {
+		const response = await auth.api.adminCreateOAuthClient({
+			headers,
+			body: {
+				redirect_uris: [redirectUri],
+				skip_consent: true,
+			},
+		});
+		expect(response?.client_id).toBeDefined();
+		expect(response?.client_secret).toBeDefined();
+		expect(response?.redirect_uris).toBeDefined();
+		oauthClient = response;
+	});
+
+	async function getIdTokenClaims() {
+		if (!oauthClient?.client_id || !oauthClient?.client_secret) {
+			throw Error("beforeAll not run properly");
+		}
+
+		const scopes = ["openid", "profile"];
+		const codeVerifier = generateRandomString(32);
+		const url = await createAuthorizationURL({
+			id: providerId,
+			options: {
+				clientId: oauthClient.client_id,
+				clientSecret: oauthClient.client_secret,
+				redirectURI: redirectUri,
+			},
+			redirectURI: "",
+			authorizationEndpoint: `${authServerBaseUrl}/api/auth/oauth2/authorize`,
+			state,
+			scopes,
+			codeVerifier,
+		});
+
+		let callbackRedirectUrl = "";
+		await client.$fetch(url.toString(), {
+			onError(context) {
+				callbackRedirectUrl = context.response.headers.get("Location") || "";
+			},
+		});
+		expect(callbackRedirectUrl).not.toBe("");
+		expect(callbackRedirectUrl).toContain(redirectUri);
+
+		const callbackUrl = new URL(callbackRedirectUrl);
+		const code = callbackUrl.searchParams.get("code");
+		const returnedState = callbackUrl.searchParams.get("state");
+
+		expect(code).toBeTruthy();
+		expect(returnedState).toBe(state);
+
+		const { body, headers: reqHeaders } = createAuthorizationCodeRequest({
+			code: code!,
+			codeVerifier,
+			redirectURI: redirectUri,
+			options: {
+				clientId: oauthClient.client_id,
+				clientSecret: oauthClient.client_secret,
+				redirectURI: redirectUri,
+			},
+		});
+
+		const tokens = await client.$fetch<{
+			id_token?: string;
+			[key: string]: unknown;
+		}>("/oauth2/token", {
+			method: "POST",
+			body,
+			headers: reqHeaders,
+		});
+
+		expect(tokens.data?.id_token).toBeDefined();
+		return decodeJwt(tokens.data!.id_token!);
+	}
+
+	it("customIdTokenClaims can override acr and auth_time", async ({
+		expect,
+	}) => {
+		const claims = await getIdTokenClaims();
+		expect(claims.acr).toBe("silver");
+		expect(claims.auth_time).toBe(0);
+	});
+
+	it("customIdTokenClaims cannot override pinned security claims", async ({
+		expect,
+	}) => {
+		const claims = await getIdTokenClaims();
+		expect(claims.sub).not.toBe("evil");
+		expect(claims.iss).not.toBe("https://evil.com");
+		expect(claims.aud).not.toBe("evil-client");
+		expect(claims.iat).not.toBe(0);
+		expect(claims.exp).not.toBe(0);
+	});
+});
