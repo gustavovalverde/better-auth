@@ -1,3 +1,4 @@
+import type { OAuthProviderExtension } from "@better-auth/oauth-provider";
 import type { BetterAuthPlugin } from "better-auth";
 import {
 	createCredentialEndpoint,
@@ -9,6 +10,10 @@ import {
 	createStatusListEndpoint,
 	createUpdateCredentialStatusEndpoint,
 } from "./endpoints";
+import {
+	createPreAuthorizedCodeHandler,
+	PRE_AUTH_GRANT_TYPE,
+} from "./grant-handler";
 import { schema } from "./schema";
 import type { Oidc4vciOptions } from "./types";
 
@@ -31,6 +36,14 @@ export function oidc4vci(options: Oidc4vciOptions) {
 		id: "oidc4vci",
 		schema,
 		options,
+		extensions: {
+			"oauth-provider": {
+				grantTypes: {
+					[PRE_AUTH_GRANT_TYPE]: createPreAuthorizedCodeHandler(),
+				},
+				grantTypeURIs: [PRE_AUTH_GRANT_TYPE],
+			} satisfies OAuthProviderExtension,
+		},
 		endpoints: {
 			/**
 			 * OIDC4VCI Credential Issuer Metadata.

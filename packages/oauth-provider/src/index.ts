@@ -9,6 +9,7 @@ export { getOAuthProviderState, oauthProvider } from "./oauth";
 export { checkResource, createUserTokens } from "./token";
 export type * from "./types";
 export type {
+	ClientAuthStrategyInput,
 	GrantTypeHandler,
 	OAuthProviderExtension,
 	TokenClaimInfo,

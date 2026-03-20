@@ -168,8 +168,33 @@ export async function authorizeEndpoint(
 		});
 	}
 
-	// Check request
-	const query: OAuthAuthorizationQuery = ctx.query;
+	// Resolve request_uri (PAR) before processing
+	let query: OAuthAuthorizationQuery = ctx.query;
+	if (query.request_uri) {
+		if (!opts.requestUriResolver) {
+			throw ctx.redirect(
+				getErrorURL(ctx, "invalid_request_uri", "request_uri not supported"),
+			);
+		}
+		const resolvedParams = await opts.requestUriResolver({
+			requestUri: query.request_uri,
+			clientId: query.client_id ?? "",
+			ctx,
+		});
+		if (!resolvedParams) {
+			throw ctx.redirect(
+				getErrorURL(
+					ctx,
+					"invalid_request_uri",
+					"request_uri is invalid or expired",
+				),
+			);
+		}
+		// Merge resolved params into query (resolved params take precedence)
+		query = { ...query, ...resolvedParams } as OAuthAuthorizationQuery;
+		// Remove request_uri from merged query
+		query.request_uri = undefined;
+	}
 	await oAuthState.set({
 		query: query.toString(),
 	});

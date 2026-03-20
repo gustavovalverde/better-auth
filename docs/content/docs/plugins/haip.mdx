@@ -1,0 +1,579 @@
+---
+title: HAIP (High Assurance Interoperability Profile)
+description: OpenID4VC High Assurance Interoperability Profile for regulated identity use cases
+---
+
+The HAIP plugin implements the [OpenID4VC High Assurance Interoperability Profile 1.0](https://openid.net/specs/openid4vc-high-assurance-interoperability-profile-1_0.html), narrowing OID4VCI and OID4VP down to a concrete, interoperable subset for regulated identity.
+
+It provides protocol-level security mechanisms on top of the `oauth-provider`, `oidc4vci`, and `oidc4vp` plugins through composable factory functions that wire into their extension points.
+
+**Key Features**:
+
+- **DPoP** — Sender-constrained access tokens per [RFC 9449](https://datatracker.ietf.org/doc/html/rfc9449)
+- **PAR** — Pushed Authorization Requests per [RFC 9126](https://datatracker.ietf.org/doc/html/rfc9126)
+- **Wallet Attestation** — `attest_jwt_client_auth` client authentication (OID4VCI HAIP §6.3)
+- **Key Attestation** — `attestation` proof type for credential issuance (OID4VCI Appendix D)
+- **x5c Headers** — X.509 certificate chain in SD-JWT credential headers
+- **DCQL** — Digital Credentials Query Language for VP presentation matching
+- **JARM** — `direct_post.jwt` response mode with JWE-encrypted VP responses
+- **VP Initiation** — Create and resolve VP authorization request sessions
+- **Metadata Composition** — Automatic enrichment of `.well-known` endpoints with HAIP fields
+
+<Callout type="info">
+  This plugin requires `oauth-provider` and `jwt` as peer plugins. It also works alongside `oidc4vci` and `oidc4vp` via their extension points.
+</Callout>
+
+## Installation
+
+<Steps>
+  <Step>
+    ### Mount the Plugin
+
+    Add the HAIP plugin alongside the required peer plugins.
+
+    ```ts title="auth.ts"
+    import { betterAuth } from "better-auth";
+    import { jwt } from "better-auth/plugins";
+    import { oauthProvider } from "@better-auth/oauth-provider";
+    import { haip } from "@better-auth/haip"; // [!code highlight]
+
+    const auth = betterAuth({
+      plugins: [
+        jwt(),
+        oauthProvider({
+          loginPage: "/login",
+          consentPage: "/consent",
+          grantTypes: ["authorization_code"],
+        }),
+        haip(), // [!code highlight]
+      ],
+    });
+    ```
+  </Step>
+
+  <Step>
+    ### Migrate the Database
+
+    Run the migration or generate the schema to add the HAIP tables.
+
+    <Tabs items={["migrate", "generate"]}>
+      <Tab value="migrate">
+      ```bash
+      npx @better-auth/cli migrate
+      ```
+      </Tab>
+      <Tab value="generate">
+      ```bash
+      npx @better-auth/cli generate
+      ```
+      </Tab>
+    </Tabs>
+
+    See the [Schema](#schema) section to add the tables manually.
+  </Step>
+
+  <Step>
+    ### Wire Extension Points
+
+    The HAIP plugin exports factory functions that plug into `oauth-provider`, `oidc4vci`, and `oidc4vp`. Wire only the ones your deployment needs.
+
+    ```ts title="auth.ts"
+    import { betterAuth } from "better-auth";
+    import { jwt } from "better-auth/plugins";
+    import { oauthProvider } from "@better-auth/oauth-provider";
+    import { oidc4vci } from "@better-auth/oidc4vci";
+    import { oidc4vp } from "@better-auth/oidc4vp";
+    import {
+      haip,
+      createX5cHeaders,
+      createDpopTokenBinding,
+      createDpopAccessTokenValidator,
+      createWalletAttestationStrategy,
+      createKeyAttestationValidator,
+      createParResolver,
+      createJarmHandler,
+      createDcqlMatcher,
+      WALLET_ATTESTATION_TYPE,
+    } from "@better-auth/haip"; // [!code highlight]
+
+    const auth = betterAuth({
+      plugins: [
+        jwt({ jwt: { issuer: "https://issuer.example.com" } }),
+        oauthProvider({
+          loginPage: "/login",
+          consentPage: "/consent",
+          grantTypes: ["authorization_code"],
+          // DPoP token binding // [!code highlight]
+          tokenBinding: createDpopTokenBinding(), // [!code highlight]
+          // PAR request resolver // [!code highlight]
+          requestUriResolver: createParResolver(), // [!code highlight]
+          // Wallet attestation client auth // [!code highlight]
+          clientAuthStrategies: { // [!code highlight]
+            [WALLET_ATTESTATION_TYPE]: createWalletAttestationStrategy(), // [!code highlight]
+          }, // [!code highlight]
+        }),
+        oidc4vci({
+          credentialConfigurations: [
+            { id: "identity_v1", vct: "urn:example:identity:v1" },
+          ],
+          // x5c headers on issued credentials // [!code highlight]
+          resolveCredentialHeaders: createX5cHeaders([ // [!code highlight]
+            process.env.LEAF_CERT!, // [!code highlight]
+            process.env.INTERMEDIATE_CERT!, // [!code highlight]
+          ]), // [!code highlight]
+          // DPoP validation at credential endpoint // [!code highlight]
+          accessTokenValidator: createDpopAccessTokenValidator(), // [!code highlight]
+          // Attestation proof type // [!code highlight]
+          proofValidators: { // [!code highlight]
+            attestation: createKeyAttestationValidator(), // [!code highlight]
+          }, // [!code highlight]
+        }),
+        oidc4vp({
+          expectedAudience: "https://verifier.example.com",
+          allowedIssuers: ["https://issuer.example.com"],
+          // DCQL presentation matching // [!code highlight]
+          presentationMatcher: createDcqlMatcher(), // [!code highlight]
+          // JARM encrypted VP responses // [!code highlight]
+          responseModeHandlers: { // [!code highlight]
+            "direct_post.jwt": createJarmHandler({ // [!code highlight]
+              decryptionKey: async () => JSON.parse(process.env.JARM_KEY!), // [!code highlight]
+            }), // [!code highlight]
+          }, // [!code highlight]
+        }),
+        haip(), // [!code highlight]
+      ],
+    });
+    ```
+  </Step>
+</Steps>
+
+## Configuration
+
+```ts
+haip({
+  /** X.509 certificate chain (PEM strings, leaf first) */
+  x5c: [leafCert, intermediateCert],
+  /** Require PAR for all authorization requests. Default: true */
+  requirePar: true,
+  /** Require DPoP sender-constrained tokens. Default: true */
+  requireDpop: true,
+  /** Allowed DPoP signing algorithms. Default: ["ES256"] */
+  dpopSigningAlgValues: ["ES256"],
+  /** PAR request_uri lifetime in seconds. Default: 60 */
+  parExpiresInSeconds: 60,
+  /** VP authorization request lifetime in seconds. Default: 300 */
+  vpRequestExpiresInSeconds: 300,
+});
+```
+
+## Extension Points
+
+The HAIP plugin exports composable factory functions. Each one is designed to slot into a specific extension point on a peer plugin.
+
+### DPoP (RFC 9449)
+
+Sender-constrained access tokens prevent token theft — the token is bound to the client's proof-of-possession key.
+
+#### `createDpopTokenBinding`
+
+Validates DPoP proofs at the token endpoint and returns `{ tokenType: "DPoP", cnf: { jkt } }` for embedding in the JWT access token.
+
+```ts
+import { createDpopTokenBinding } from "@better-auth/haip";
+
+oauthProvider({
+  tokenBinding: createDpopTokenBinding({
+    /** Supported DPoP proof signing algorithms. Default: ["ES256"] */
+    supportedAlgs: ["ES256"],
+    /** Reject requests without DPoP. Default: false */
+    requireDpop: false,
+  }),
+});
+```
+
+When a `DPoP` header is present, the handler verifies the proof JWT (`typ`, `alg`, `htm`, `htu`, `iat`, `jti`), computes the JWK thumbprint, and returns a `DPoP-Nonce` header. When absent, it returns `null` (Bearer token).
+
+#### `createDpopAccessTokenValidator`
+
+Enforces DPoP binding at the credential endpoint. If the access token contains `cnf.jkt`, the request must include a valid DPoP proof whose JWK thumbprint matches.
+
+```ts
+import { createDpopAccessTokenValidator } from "@better-auth/haip";
+
+oidc4vci({
+  accessTokenValidator: createDpopAccessTokenValidator({
+    /** Require DPoP even for tokens without cnf. Default: false */
+    requireDpop: false,
+  }),
+});
+```
+
+### PAR (RFC 9126)
+
+Pushed Authorization Requests move authorization parameters from the front-channel (URL query) to the back-channel (POST body), preventing parameter tampering.
+
+The HAIP plugin registers a `POST /oauth2/par` endpoint. Clients POST their authorization parameters and receive a `request_uri` to use at the authorize endpoint.
+
+#### `createParResolver`
+
+Resolves `request_uri` values at the authorize endpoint by looking up stored pushed requests.
+
+```ts
+import { createParResolver } from "@better-auth/haip";
+
+oauthProvider({
+  requestUriResolver: createParResolver(),
+});
+```
+
+**PAR flow:**
+
+1. Client sends `POST /api/auth/oauth2/par` with all authorize parameters
+2. Server returns `{ request_uri: "urn:ietf:params:oauth:request_uri:...", expires_in: 60 }`
+3. Client redirects to `GET /api/auth/oauth2/authorize?client_id=...&request_uri=urn:ietf:params:oauth:request_uri:...`
+4. Server resolves the `request_uri` and processes the stored parameters
+
+Pushed requests are one-time use and deleted after resolution or expiry.
+
+### Wallet Attestation
+
+HAIP wallets authenticate at the token endpoint using `attest_jwt_client_auth`. The `client_assertion` consists of two JWTs concatenated with `~`:
+
+1. **Client Attestation JWT** — Signed by a trusted issuer (wallet manufacturer), contains `cnf.jwk` with the wallet instance key
+2. **Client Attestation PoP JWT** — Signed by the wallet instance key
+
+#### `createWalletAttestationStrategy`
+
+```ts
+import {
+  createWalletAttestationStrategy,
+  WALLET_ATTESTATION_TYPE,
+} from "@better-auth/haip";
+
+oauthProvider({
+  clientAuthStrategies: {
+    [WALLET_ATTESTATION_TYPE]: createWalletAttestationStrategy({
+      /** X.509 trust anchors for wallet attestation issuers */
+      trustedIssuers: [walletManufacturerCert],
+    }),
+  },
+});
+```
+
+### Key Attestation
+
+The `attestation` proof type (OID4VCI Appendix D) allows wallets to prove possession of an attested key when requesting credentials.
+
+#### `createKeyAttestationValidator`
+
+```ts
+import { createKeyAttestationValidator } from "@better-auth/haip";
+
+oidc4vci({
+  proofValidators: {
+    attestation: createKeyAttestationValidator({
+      /** Trust anchors for attestation JWT issuers */
+      trustedIssuers: [trustedCertPem],
+    }),
+  },
+});
+```
+
+The validator extracts the attested public key from the attestation JWT's `cnf.jwk`, verifies the x5c certificate chain, and computes the JWK thumbprint for credential binding.
+
+### x5c Headers
+
+HAIP requires the issuer's X.509 certificate chain in the protected header of SD-JWT VCs so verifiers can validate against a PKI trust anchor.
+
+#### `createX5cHeaders`
+
+```ts
+import { createX5cHeaders } from "@better-auth/haip";
+
+oidc4vci({
+  resolveCredentialHeaders: createX5cHeaders([
+    leafCertPem,
+    intermediateCertPem,
+  ]),
+});
+```
+
+### DCQL
+
+The Digital Credentials Query Language replaces Presentation Exchange for specifying which credentials a verifier requests.
+
+#### `createDcqlMatcher`
+
+Creates a presentation matcher that evaluates DCQL queries against verified presentations.
+
+```ts
+import { createDcqlMatcher } from "@better-auth/haip";
+
+oidc4vp({
+  presentationMatcher: createDcqlMatcher(),
+});
+```
+
+#### `buildDcqlQuery`
+
+Helper to construct a DCQL query:
+
+```ts
+import { buildDcqlQuery } from "@better-auth/haip";
+
+const query = buildDcqlQuery([
+  {
+    id: "identity_cred",
+    format: "dc+sd-jwt",
+    meta: { vct_values: ["urn:example:identity:v1"] },
+    claims: [
+      { path: ["given_name"] },
+      { path: ["family_name"] },
+      { path: ["birthdate"] },
+    ],
+  },
+]);
+```
+
+**DCQL types:**
+
+```ts
+type DcqlQuery = {
+  credentials: DcqlCredentialQuery[];
+};
+
+type DcqlCredentialQuery = {
+  id: string;
+  format: string;           // "dc+sd-jwt" | "mso_mdoc"
+  meta?: { vct_values?: string[] };
+  claims?: DcqlClaimQuery[];
+};
+
+type DcqlClaimQuery = {
+  path: string[];            // JSON path segments
+  values?: unknown[];        // Required values (optional constraint)
+};
+```
+
+### JARM
+
+JARM (JWT Secured Authorization Response Mode) encrypts VP authorization responses using JWE with ECDH-ES key agreement.
+
+#### `createJarmHandler`
+
+```ts
+import { createJarmHandler } from "@better-auth/haip";
+
+oidc4vp({
+  responseModeHandlers: {
+    "direct_post.jwt": createJarmHandler({
+      /** ECDH-ES decryption key (JWK) or async resolver */
+      decryptionKey: async () => JSON.parse(process.env.JARM_PRIVATE_KEY!),
+      /** Allowed key agreement algorithms. Default: ["ECDH-ES"] */
+      supportedAlgs: ["ECDH-ES"],
+      /** Allowed content encryption algorithms. Default: ["A128GCM", "A256GCM"] */
+      supportedEnc: ["A128GCM", "A256GCM"],
+    }),
+  },
+});
+```
+
+## Endpoints
+
+### PAR
+
+`POST /api/auth/oauth2/par`
+
+Push authorization parameters to the server and receive a `request_uri`.
+
+**Request body** (form-urlencoded or JSON):
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `client_id` | `string` | Required. The client identifier. |
+| `response_type` | `string` | Required. Must be `"code"`. |
+| `redirect_uri` | `string` | Required. Registered redirect URI. |
+| `scope` | `string` | Optional. Space-separated scopes. |
+| `state` | `string` | Optional. Client state value. |
+| `code_challenge` | `string` | Optional. PKCE challenge. |
+| `code_challenge_method` | `string` | Optional. Must be `"S256"`. |
+| `nonce` | `string` | Optional. OIDC nonce. |
+| `authorization_details` | `string` | Optional. JSON-encoded authorization details. |
+
+**Response:**
+
+```json
+{
+  "request_uri": "urn:ietf:params:oauth:request_uri:abc123...",
+  "expires_in": 60
+}
+```
+
+### VP Request
+
+`POST /api/auth/haip/vp/request`
+
+Create a VP authorization request session for wallet presentation.
+
+**Request body** (JSON):
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `dcql_query` | `object` | Required. DCQL query specifying requested credentials. |
+| `client_id` | `string` | Optional. Verifier identifier. |
+| `client_id_scheme` | `string` | Optional. E.g., `"x509_san_dns"`. |
+| `response_mode` | `string` | Optional. E.g., `"direct_post"` or `"direct_post.jwt"`. |
+
+**Response:**
+
+```json
+{
+  "request_uri": "https://example.com/api/auth/haip/vp/resolve",
+  "session_id": "abc123...",
+  "nonce": "xyz789...",
+  "state": "def456...",
+  "expires_in": 300
+}
+```
+
+### VP Resolve
+
+`POST /api/auth/haip/vp/resolve`
+
+Resolve a VP request session by its ID. Returns the full authorization request object that the wallet needs to process.
+
+**Request body** (JSON):
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `session_id` | `string` | Required. Session ID from the VP request response. |
+
+**Response:**
+
+```json
+{
+  "response_type": "vp_token",
+  "response_uri": "https://example.com/api/auth/oidc4vp/response",
+  "response_mode": "direct_post",
+  "nonce": "xyz789...",
+  "state": "def456...",
+  "dcql_query": { "credentials": [...] },
+  "client_id": "verifier.example.com",
+  "client_id_scheme": "x509_san_dns"
+}
+```
+
+## Metadata Composition
+
+The HAIP plugin automatically enriches `.well-known/openid-configuration` and `.well-known/oauth-authorization-server` responses with:
+
+| Field | Value |
+|-------|-------|
+| `pushed_authorization_request_endpoint` | `{baseURL}/oauth2/par` |
+| `require_pushed_authorization_requests` | Value of `requirePar` option (default: `true`) |
+| `dpop_signing_alg_values_supported` | Value of `dpopSigningAlgValues` option (default: `["ES256"]`) |
+| `authorization_details_types_supported` | `["openid_credential"]` |
+
+No additional configuration is needed — mounting the plugin is sufficient.
+
+## Schema
+
+### Pushed Request
+
+Table Name: `haipPushedRequest`
+
+<DatabaseTable
+  fields={[
+    {
+      name: "id",
+      type: "string",
+      description: "Database ID",
+      isPrimaryKey: true,
+    },
+    {
+      name: "requestId",
+      type: "string",
+      description: "Unique identifier used in the request_uri",
+      isUnique: true,
+    },
+    {
+      name: "clientId",
+      type: "string",
+      description: "Client that submitted the PAR request",
+      isForeignKey: true,
+      foreignKeyRef: "oauthClient.clientId",
+    },
+    {
+      name: "requestParams",
+      type: "string",
+      description: "JSON-encoded authorization parameters",
+    },
+    {
+      name: "expiresAt",
+      type: "date",
+      description: "Expiration time of the pushed request",
+    },
+  ]}
+/>
+
+### VP Session
+
+Table Name: `haipVpSession`
+
+<DatabaseTable
+  fields={[
+    {
+      name: "id",
+      type: "string",
+      description: "Database ID",
+      isPrimaryKey: true,
+    },
+    {
+      name: "sessionId",
+      type: "string",
+      description: "Session identifier returned to the verifier",
+      isUnique: true,
+    },
+    {
+      name: "nonce",
+      type: "string",
+      description: "Cryptographic nonce for replay protection",
+      isUnique: true,
+    },
+    {
+      name: "state",
+      type: "string",
+      description: "State value for correlating request and response",
+    },
+    {
+      name: "dcqlQuery",
+      type: "string",
+      description: "JSON-encoded DCQL query specifying requested credentials",
+    },
+    {
+      name: "responseUri",
+      type: "string",
+      description: "URI where the wallet submits the VP response",
+    },
+    {
+      name: "clientId",
+      type: "string",
+      description: "Verifier identifier (optional)",
+    },
+    {
+      name: "clientIdScheme",
+      type: "string",
+      description: "Client ID scheme (e.g., x509_san_dns)",
+    },
+    {
+      name: "responseMode",
+      type: "string",
+      description: "Response mode (direct_post or direct_post.jwt)",
+    },
+    {
+      name: "expiresAt",
+      type: "date",
+      description: "Expiration time of the VP session",
+    },
+  ]}
+/>

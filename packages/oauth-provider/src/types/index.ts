@@ -1,4 +1,4 @@
-import type { LiteralString } from "@better-auth/core";
+import type { GenericEndpointContext, LiteralString } from "@better-auth/core";
 import type { InferOptionSchema, Session, User } from "better-auth/types";
 import type { JWTPayload } from "jose";
 import type { schema } from "../schema";
@@ -16,11 +16,7 @@ export type StoreTokenType =
 	| "access_token"
 	| "refresh_token"
 	| "authorization_code"
-	| "pre_authorized_code"
-	| "tx_code"
-	| "c_nonce"
-	| "credential_identifier"
-	| "transaction_id";
+	| (string & {});
 
 type InternallySupportedScopes =
 	| "openid"
@@ -497,6 +493,8 @@ export interface OAuthOptions<
 		scopes: Scopes;
 		/** The resource requesting. Provided by the token endpoint. */
 		resource?: string;
+		/** The client ID making the token request */
+		clientId?: string;
 		/** oAuthClient metadata */
 		metadata?: Record<string, any>;
 	}) => Awaitable<Record<string, any>>;
@@ -682,15 +680,90 @@ export interface OAuthOptions<
 	 * @see https://openid.net/specs/openid-connect-core-1_0.html#PairwiseAlg
 	 */
 	pairwiseSecret?: string;
+	/**
+	 * Custom client authentication strategies for the token endpoint.
+	 *
+	 * Keys are `client_assertion_type` URNs. When a matching assertion type arrives
+	 * at the token endpoint, the strategy handles authentication instead of the
+	 * built-in client_secret_basic/client_secret_post validation.
+	 *
+	 * @example
+	 * ```ts
+	 * clientAuthStrategies: {
+	 *   "urn:ietf:params:oauth:client-assertion-type:jwt-client-attestation":
+	 *     createWalletAttestationStrategy({ trustedIssuers: [...] }),
+	 * }
+	 * ```
+	 */
+	clientAuthStrategies?: Record<
+		string,
+		(input: {
+			assertion: string;
+			assertionType: string;
+			clientId?: string;
+			headers: Headers;
+			ctx: GenericEndpointContext;
+			opts: OAuthOptions<Scope[]>;
+		}) => Promise<ClientAuthResult>
+	>;
+	/**
+	 * Token binding callback for sender-constrained tokens (e.g., DPoP).
+	 *
+	 * Called during token issuance. When a non-null result is returned:
+	 * - `tokenType` replaces "Bearer" in the response
+	 * - `cnf` is embedded in the JWT access token payload
+	 * - `responseHeaders` are set on the HTTP response
+	 *
+	 * @example
+	 * ```ts
+	 * tokenBinding: createDpopTokenBinding()
+	 * ```
+	 */
+	tokenBinding?: (input: {
+		request: Request;
+		headers: Headers;
+		method: string;
+		url: string;
+		accessToken?: string;
+	}) => Promise<TokenBindingResult | null>;
+	/**
+	 * Resolves a `request_uri` at the authorize endpoint (PAR support).
+	 *
+	 * When the authorize endpoint receives a `request_uri` parameter, this callback
+	 * resolves it to the original authorization parameters. Return null if the URI
+	 * is invalid or expired.
+	 */
+	requestUriResolver?: (input: {
+		requestUri: string;
+		clientId: string;
+		ctx: GenericEndpointContext;
+	}) => Promise<Record<string, string> | null>;
 }
+
+export type TokenBindingResult = {
+	tokenType: string;
+	cnf: Record<string, unknown>;
+	responseHeaders?: Record<string, string>;
+};
+
+export type ClientAuthResult = {
+	clientId: string;
+	client: SchemaClient<Scope[]>;
+	metadata?: Record<string, unknown>;
+};
 
 export interface OAuthAuthorizationQuery {
 	/**
 	 * The response type.
 	 * - "code": authorization code flow.
+	 * Optional in the query when using request_uri (PAR) — resolved from stored params.
 	 */
 	// NEVER SUPPORT "token" or "id_token" - depreciated in oAuth2.1
-	response_type: "code";
+	response_type?: "code";
+	/**
+	 * PAR request_uri. When present, other params are resolved from the stored request.
+	 */
+	request_uri?: string;
 	/**
 	 * The redirect URI for the client. Must be one of the registered redirect URLs for the client.
 	 */
@@ -792,6 +865,11 @@ export interface OAuthAuthorizationQuery {
 	 * with the Claim Value being the nonce value sent in the Authentication Request.
 	 */
 	nonce?: string;
+	/**
+	 * RFC 9396 authorization_details (JSON-encoded string from the authorize query).
+	 * Carried through to the access token when present.
+	 */
+	authorization_details?: string;
 }
 
 /**
@@ -801,43 +879,14 @@ export interface OAuthAuthorizationQuery {
  * It is stored in JSON to prevent
  * direct searches by field on the db
  */
-export type VerificationValue =
-	| {
-			type: "authorization_code";
-			query: OAuthAuthorizationQuery;
-			sessionId: string;
-			userId: string;
-			referenceId?: string;
-			authTime?: number;
-	  }
-	| {
-			/**
-			 * OIDC4VCI pre-authorized code value.
-			 *
-			 * Stored in the core verification table so the oauth-provider token endpoint
-			 * can validate and redeem it without relying on any extra tables.
-			 */
-			type: "pre_authorized_code";
-			clientId: string;
-			userId: string;
-			/**
-			 * Credential configuration requested/authorized by the offer.
-			 * v1 keeps this to a single configuration id to stay KISS.
-			 */
-			credentialConfigurationId: string;
-			/**
-			 * Optional issuer_state for offer correlation.
-			 */
-			issuerState?: string;
-			/**
-			 * Optional, hashed server-side. If present, token exchange must provide a matching tx_code.
-			 */
-			txCodeHash?: string;
-			/**
-			 * Optional serialized authorization_details to carry through to the access token (v1).
-			 */
-			authorizationDetails?: unknown;
-	  };
+export type VerificationValue = {
+	type: "authorization_code";
+	query: OAuthAuthorizationQuery;
+	sessionId: string;
+	userId: string;
+	referenceId?: string;
+	authTime?: number;
+};
 
 /**
  * Client registered values as used within the plugin

@@ -1944,6 +1944,24 @@ C0.7,239.6,62.1,0.5,62.2,0.4c0,0,54,13.8,119.9,30.8S302.1,62,302.2,62c0.2,0,0.2,
 				href: "/docs/plugins/sso",
 			},
 			{
+				title: "HAIP",
+				icon: () => (
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						width="1.2em"
+						height="1.2em"
+						viewBox="0 0 24 24"
+					>
+						<path
+							fill="currentColor"
+							d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12c5.16-1.26 9-6.45 9-12V5Zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8Z"
+						/>
+					</svg>
+				),
+				href: "/docs/plugins/haip",
+				isNew: true,
+			},
+			{
 				title: "SCIM",
 				icon: () => (
 					<svg

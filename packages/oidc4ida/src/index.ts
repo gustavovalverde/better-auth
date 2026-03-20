@@ -134,7 +134,9 @@ async function readRequestBodyParam(
 	if (!request) return null;
 	try {
 		const formData = await request.clone().formData();
-		const entry = formData.get(key);
+		const entry = (formData as unknown as { get(name: string): unknown }).get(
+			key,
+		);
 		return typeof entry === "string" ? entry : null;
 	} catch {
 		return null;
