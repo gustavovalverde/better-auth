@@ -661,7 +661,7 @@ importers:
     devDependencies:
       '@cloudflare/vitest-pool-workers':
         specifier: ^0.12.18
-        version: 0.12.18(@cloudflare/workers-types@4.20260226.1)(@vitest/runner@4.1.0)(@vitest/snapshot@4.1.0)(vitest@4.1.0(@opentelemetry/api@1.9.0)(@types/node@25.5.0)(@vitest/ui@4.0.18)(happy-dom@20.7.0)(msw@2.12.10(@types/node@25.5.0)(typescript@5.9.3))(vite@7.3.1(@types/node@25.5.0)(jiti@2.6.1)(less@4.5.1)(lightningcss@1.32.0)(sass@1.97.1)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.2)))
+        version: 0.12.18(@cloudflare/workers-types@4.20260226.1)(@vitest/runner@4.1.0)(@vitest/snapshot@4.1.0)(vitest@4.1.0(@opentelemetry/api@1.9.0)(@types/node@25.5.0)(@vitest/ui@4.0.18(vitest@4.0.18))(happy-dom@20.7.0)(msw@2.12.10(@types/node@25.5.0)(typescript@5.9.3))(vite@7.3.1(@types/node@25.5.0)(jiti@2.6.1)(less@4.5.1)(lightningcss@1.32.0)(sass@1.97.1)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.2)))
       '@cloudflare/workers-types':
         specifier: ^4.20260226.1
         version: 4.20260226.1
@@ -1515,6 +1515,111 @@ importers:
       listhen:
         specifier: ^1.9.0
         version: 1.9.0
+      tsdown:
+        specifier: 'catalog:'
+        version: 0.21.1(@arethetypeswrong/core@0.18.2)(oxc-resolver@11.19.0)(publint@0.3.17)(synckit@0.11.11)(typescript@5.9.3)
+
+  packages/oidc4ida:
+    dependencies:
+      '@better-auth/utils':
+        specifier: 'catalog:'
+        version: 0.3.1
+      better-call:
+        specifier: 'catalog:'
+        version: 2.0.2(zod@4.3.6)
+      jose:
+        specifier: ^6.1.3
+        version: 6.1.3
+      zod:
+        specifier: ^4.1.5
+        version: 4.3.6
+    devDependencies:
+      '@better-auth/core':
+        specifier: workspace:*
+        version: link:../core
+      '@better-auth/oauth-provider':
+        specifier: workspace:*
+        version: link:../oauth-provider
+      better-auth:
+        specifier: workspace:*
+        version: link:../better-auth
+      tsdown:
+        specifier: 'catalog:'
+        version: 0.21.1(@arethetypeswrong/core@0.18.2)(oxc-resolver@11.19.0)(publint@0.3.17)(synckit@0.11.11)(typescript@5.9.3)
+
+  packages/oidc4vci:
+    dependencies:
+      '@better-auth/utils':
+        specifier: 'catalog:'
+        version: 0.3.1
+      '@openid4vc/oauth2':
+        specifier: ^0.4.4
+        version: 0.4.6
+      '@openid4vc/openid4vci':
+        specifier: ^0.4.4
+        version: 0.4.6
+      '@sd-jwt/jwt-status-list':
+        specifier: ^0.19.0
+        version: 0.19.0
+      '@sd-jwt/sd-jwt-vc':
+        specifier: ^0.19.0
+        version: 0.19.0
+      better-call:
+        specifier: 'catalog:'
+        version: 2.0.2(zod@4.3.6)
+      jose:
+        specifier: ^6.1.3
+        version: 6.1.3
+      zod:
+        specifier: ^4.1.5
+        version: 4.3.6
+    devDependencies:
+      '@better-auth/core':
+        specifier: workspace:*
+        version: link:../core
+      '@better-auth/oauth-provider':
+        specifier: workspace:*
+        version: link:../oauth-provider
+      better-auth:
+        specifier: workspace:*
+        version: link:../better-auth
+      tsdown:
+        specifier: 'catalog:'
+        version: 0.21.1(@arethetypeswrong/core@0.18.2)(oxc-resolver@11.19.0)(publint@0.3.17)(synckit@0.11.11)(typescript@5.9.3)
+
+  packages/oidc4vp:
+    dependencies:
+      '@better-auth/utils':
+        specifier: 'catalog:'
+        version: 0.3.1
+      '@openid4vc/openid4vp':
+        specifier: ^0.4.4
+        version: 0.4.6
+      '@sd-jwt/sd-jwt-vc':
+        specifier: ^0.19.0
+        version: 0.19.0
+      better-call:
+        specifier: 'catalog:'
+        version: 2.0.2(zod@4.3.6)
+      jose:
+        specifier: ^6.1.3
+        version: 6.1.3
+      zod:
+        specifier: ^4.1.5
+        version: 4.3.6
+    devDependencies:
+      '@better-auth/core':
+        specifier: workspace:*
+        version: link:../core
+      '@better-auth/oauth-provider':
+        specifier: workspace:*
+        version: link:../oauth-provider
+      '@better-auth/oidc4vci':
+        specifier: workspace:*
+        version: link:../oidc4vci
+      better-auth:
+        specifier: workspace:*
+        version: link:../better-auth
       tsdown:
         specifier: 'catalog:'
         version: 0.21.1(@arethetypeswrong/core@0.18.2)(oxc-resolver@11.19.0)(publint@0.3.17)(synckit@0.11.11)(typescript@5.9.3)
@@ -4599,6 +4704,18 @@ packages:
   '@open-draft/until@2.1.0':
     resolution: {integrity: sha512-U69T3ItWHvLwGg5eJ0n3I62nWuE6ilHlmz7zM0npLBRvPRd7e6NYmg54vvRtP5mZG7kZqZCFVdsTWo7BPtBujg==}
 
+  '@openid4vc/oauth2@0.4.6':
+    resolution: {integrity: sha512-PVa+N9UHt4KhHh02KHUHqS64vdnoaktNSVr7VUgeaB1NS0c3+7UIa2A/TnsyZqUAy9TxGltAflxsaWO+HtWPQQ==}
+
+  '@openid4vc/openid4vci@0.4.6':
+    resolution: {integrity: sha512-qjxLeE6K285r+lyy+4jJFS+M70+dyImVGvqo97BO+JxL4059jMb/FwJIXjnp2Ygl8+FuaEgFxhGpFdnaNwj30w==}
+
+  '@openid4vc/openid4vp@0.4.6':
+    resolution: {integrity: sha512-d7H8SuFlHZS30OC1U8vsezGHuXkOTp97rrHbsxrge7AQaHHi8BZXAwUGdujbXdkkU7zulXx9yk2+J+ZTb/GE3A==}
+
+  '@openid4vc/utils@0.4.6':
+    resolution: {integrity: sha512-qpZ40ccnYTMdmW5zzIiN5SvNBzWHu0cUz97Itw+YMC8obosQ62c4Tg9LpwWwVirouN9oOQZ7IuF1EDakiB8w3w==}
+
   '@openrouter/ai-sdk-provider@2.2.5':
     resolution: {integrity: sha512-IgM96gPvpxMZYYJQSIuXqvHX0mUXHEvsa/AtIlfb1VK4ek584ydAzc/wf3IuKxNof15o38WZMpCwfsOFHv96Jg==}
     engines: {node: '>=18'}
@@ -6448,6 +6565,34 @@ packages:
 
   '@scalar/types@0.6.8':
     resolution: {integrity: sha512-24AwoTKOggB+VNY65yIuSXwE5/kwjplqrx4v+VYuRBtIMVt3I+Ppaz45Xk3QoDirNCGtraNRpAbfArLRlFcP/w==}
+    engines: {node: '>=20'}
+
+  '@sd-jwt/core@0.19.0':
+    resolution: {integrity: sha512-/FeuQjzQFtnxDsHF64Bw+3uixVogNkXlMGBo1CKWrxB/OLNqtGXQZplKBRZMJWgnOJEqDwD6750wrOxsVly6mg==}
+    engines: {node: '>=20'}
+
+  '@sd-jwt/decode@0.19.0':
+    resolution: {integrity: sha512-gRfpJseFRy3bFMdlmJjVjuEcLNuekpiZJD2F2luJIKVlk26AEjZSJf6377vwNySa8hb+i4MZDwdy14lcTTmqtA==}
+    engines: {node: '>=20'}
+
+  '@sd-jwt/jwt-status-list@0.19.0':
+    resolution: {integrity: sha512-Xhh0n0DKe3paEtNNQSScy4dtA0ZVKF2OrmDcIB2jm77Doh4xsSs1pOseGEWBs9fmAe5Y0m082wgkmQnWEV53IQ==}
+    engines: {node: '>=20'}
+
+  '@sd-jwt/present@0.19.0':
+    resolution: {integrity: sha512-WXDwqwUXmtyj7YZ5c+wb26ZBeVOsKXCbCI7s1pRH9ngIjFNDGgAZoVCOmLq8pPgWSJzOTgJe3ErO2k63ZwhyeQ==}
+    engines: {node: '>=20'}
+
+  '@sd-jwt/sd-jwt-vc@0.19.0':
+    resolution: {integrity: sha512-sjX9/E32X0HNpOM5b9np2fHSS9CJu72JDkGEuaHTfZTLTmgh1Cj6KhP7kwI1Bxhw0CCt7tjhrAmMvEEIbgIwVg==}
+    engines: {node: '>=20'}
+
+  '@sd-jwt/types@0.19.0':
+    resolution: {integrity: sha512-nfuC9zRLKe7o4HSvc+N4ojWRAxo4JGfgcNWpR7bJloLUlnE9eQuu9h9pEaJZht7KRwMpGorNTIdYpoi1btuiew==}
+    engines: {node: '>=20'}
+
+  '@sd-jwt/utils@0.19.0':
+    resolution: {integrity: sha512-bDwDRjfxMBNOsAXY8q8hnxQq7jdOWxrdqTK926Mxt8DN+ttXbXbZIPLwSh84M90WP0V7+WdkXlZD31iISzUR3w==}
     engines: {node: '>=20'}
 
   '@selderee/plugin-htmlparser2@0.11.0':
@@ -12556,6 +12701,9 @@ packages:
   pako@1.0.11:
     resolution: {integrity: sha512-4hLB8Py4zZce5s4yd9XzopqwVv/yGNhV1Bl8NTmCq1763HeK2+EwVTv+leGeL13Dnh2wfbqowVPXCIO0z4taYw==}
 
+  pako@2.1.0:
+    resolution: {integrity: sha512-w+eufiZ1WuJYgPXbV/PO3NCMEc3xqylkKHzp8bxp1uW4qaSNQUkwmLLEc3kKsfz8lpV1F8Ht3U1Cm+9Srog2ug==}
+
   parent-module@1.0.1:
     resolution: {integrity: sha512-GQ2EWRpQV8/o+Aw8YqtfZZPfNRWZYkbidE9k5rpl/hC3vtHHBfGm2Ifi6qWV+coDGkrUKZAxE3Lot5kcsRlh+g==}
     engines: {node: '>=6'}
@@ -15704,6 +15852,12 @@ packages:
     peerDependencies:
       zod: ^3.25 || ^4
 
+  zod-validation-error@5.0.0:
+    resolution: {integrity: sha512-hmk+pkyKq7Q71PiWVSDUc3VfpzpvcRHZ3QPw9yEMVvmtCekaMeOHnbr3WbxfrgEnQTv6haGP4cmv0Ojmihzsxw==}
+    engines: {node: '>=18.0.0'}
+    peerDependencies:
+      zod: ^3.25.0 || ^4.0.0
+
   zod@3.25.76:
     resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
 
@@ -15924,7 +16078,7 @@ snapshots:
   '@antfu/install-pkg@1.1.0':
     dependencies:
       package-manager-detector: 1.6.0
-      tinyexec: 1.0.2
+      tinyexec: 1.0.4
 
   '@arethetypeswrong/cli@0.18.2':
     dependencies:
@@ -16143,7 +16297,7 @@ snapshots:
 
   '@babel/generator@7.29.1':
     dependencies:
-      '@babel/parser': 7.29.0
+      '@babel/parser': 7.29.2
       '@babel/types': 7.29.0
       '@jridgewell/gen-mapping': 0.3.13
       '@jridgewell/trace-mapping': 0.3.31
@@ -16721,7 +16875,7 @@ snapshots:
   '@babel/template@7.28.6':
     dependencies:
       '@babel/code-frame': 7.29.0
-      '@babel/parser': 7.29.0
+      '@babel/parser': 7.29.2
       '@babel/types': 7.29.0
 
   '@babel/traverse@7.29.0':
@@ -16729,7 +16883,7 @@ snapshots:
       '@babel/code-frame': 7.29.0
       '@babel/generator': 7.29.1
       '@babel/helper-globals': 7.28.0
-      '@babel/parser': 7.29.0
+      '@babel/parser': 7.29.2
       '@babel/template': 7.28.6
       '@babel/types': 7.29.0
       debug: 4.4.3
@@ -16846,14 +17000,14 @@ snapshots:
     optionalDependencies:
       workerd: 1.20260305.0
 
-  '@cloudflare/vitest-pool-workers@0.12.18(@cloudflare/workers-types@4.20260226.1)(@vitest/runner@4.1.0)(@vitest/snapshot@4.1.0)(vitest@4.1.0(@opentelemetry/api@1.9.0)(@types/node@25.5.0)(@vitest/ui@4.0.18)(happy-dom@20.7.0)(msw@2.12.10(@types/node@25.5.0)(typescript@5.9.3))(vite@7.3.1(@types/node@25.5.0)(jiti@2.6.1)(less@4.5.1)(lightningcss@1.32.0)(sass@1.97.1)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.2)))':
+  '@cloudflare/vitest-pool-workers@0.12.18(@cloudflare/workers-types@4.20260226.1)(@vitest/runner@4.1.0)(@vitest/snapshot@4.1.0)(vitest@4.1.0(@opentelemetry/api@1.9.0)(@types/node@25.5.0)(@vitest/ui@4.0.18(vitest@4.0.18))(happy-dom@20.7.0)(msw@2.12.10(@types/node@25.5.0)(typescript@5.9.3))(vite@7.3.1(@types/node@25.5.0)(jiti@2.6.1)(less@4.5.1)(lightningcss@1.32.0)(sass@1.97.1)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.2)))':
     dependencies:
       '@vitest/runner': 4.1.0
       '@vitest/snapshot': 4.1.0
       cjs-module-lexer: 1.4.3
       esbuild: 0.27.3
       miniflare: 4.20260305.0
-      vitest: 4.1.0(@opentelemetry/api@1.9.0)(@types/node@25.5.0)(@vitest/ui@4.0.18)(happy-dom@20.7.0)(msw@2.12.10(@types/node@25.5.0)(typescript@5.9.3))(vite@7.3.1(@types/node@25.5.0)(jiti@2.6.1)(less@4.5.1)(lightningcss@1.32.0)(sass@1.97.1)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.2))
+      vitest: 4.1.0(@opentelemetry/api@1.9.0)(@types/node@25.5.0)(@vitest/ui@4.0.18(vitest@4.0.18))(happy-dom@20.7.0)(msw@2.12.10(@types/node@25.5.0)(typescript@5.9.3))(vite@7.3.1(@types/node@25.5.0)(jiti@2.6.1)(less@4.5.1)(lightningcss@1.32.0)(sass@1.97.1)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.2))
       wrangler: 4.69.0(@cloudflare/workers-types@4.20260226.1)
     transitivePeerDependencies:
       - '@cloudflare/workers-types'
@@ -18747,6 +18901,29 @@ snapshots:
 
   '@open-draft/until@2.1.0': {}
 
+  '@openid4vc/oauth2@0.4.6':
+    dependencies:
+      '@openid4vc/utils': 0.4.6
+      zod: 4.3.6
+
+  '@openid4vc/openid4vci@0.4.6':
+    dependencies:
+      '@openid4vc/oauth2': 0.4.6
+      '@openid4vc/utils': 0.4.6
+      zod: 4.3.6
+
+  '@openid4vc/openid4vp@0.4.6':
+    dependencies:
+      '@openid4vc/oauth2': 0.4.6
+      '@openid4vc/utils': 0.4.6
+      zod: 4.3.6
+
+  '@openid4vc/utils@0.4.6':
+    dependencies:
+      buffer: 6.0.3
+      zod: 4.3.6
+      zod-validation-error: 5.0.0(zod@4.3.6)
+
   '@openrouter/ai-sdk-provider@2.2.5(ai@6.0.116(zod@4.3.6))(zod@4.3.6)':
     dependencies:
       ai: 6.0.116(zod@4.3.6)
@@ -20351,7 +20528,7 @@ snapshots:
   '@react-native/codegen@0.84.1(@babel/core@7.29.0)':
     dependencies:
       '@babel/core': 7.29.0
-      '@babel/parser': 7.29.0
+      '@babel/parser': 7.29.2
       hermes-parser: 0.32.0
       invariant: 2.2.4
       nullthrows: 1.1.1
@@ -20843,6 +21020,44 @@ snapshots:
       nanoid: 5.1.6
       type-fest: 5.4.4
       zod: 4.3.6
+
+  '@sd-jwt/core@0.19.0':
+    dependencies:
+      '@sd-jwt/decode': 0.19.0
+      '@sd-jwt/present': 0.19.0
+      '@sd-jwt/types': 0.19.0
+      '@sd-jwt/utils': 0.19.0
+
+  '@sd-jwt/decode@0.19.0':
+    dependencies:
+      '@sd-jwt/types': 0.19.0
+      '@sd-jwt/utils': 0.19.0
+
+  '@sd-jwt/jwt-status-list@0.19.0':
+    dependencies:
+      '@sd-jwt/types': 0.19.0
+      '@sd-jwt/utils': 0.19.0
+      pako: 2.1.0
+
+  '@sd-jwt/present@0.19.0':
+    dependencies:
+      '@sd-jwt/decode': 0.19.0
+      '@sd-jwt/types': 0.19.0
+      '@sd-jwt/utils': 0.19.0
+
+  '@sd-jwt/sd-jwt-vc@0.19.0':
+    dependencies:
+      '@sd-jwt/core': 0.19.0
+      '@sd-jwt/jwt-status-list': 0.19.0
+      '@sd-jwt/utils': 0.19.0
+      zod: 4.3.6
+
+  '@sd-jwt/types@0.19.0': {}
+
+  '@sd-jwt/utils@0.19.0':
+    dependencies:
+      '@sd-jwt/types': 0.19.0
+      js-base64: 3.7.8
 
   '@selderee/plugin-htmlparser2@0.11.0':
     dependencies:
@@ -21446,7 +21661,7 @@ snapshots:
     dependencies:
       '@babel/core': 7.29.0
       '@babel/generator': 7.29.1
-      '@babel/parser': 7.29.0
+      '@babel/parser': 7.29.2
       '@babel/types': 7.29.0
       ansis: 4.2.0
       babel-dead-code-elimination: 1.0.12
@@ -21792,7 +22007,7 @@ snapshots:
 
   '@types/babel__core@7.20.5':
     dependencies:
-      '@babel/parser': 7.29.0
+      '@babel/parser': 7.29.2
       '@babel/types': 7.29.0
       '@types/babel__generator': 7.27.0
       '@types/babel__template': 7.4.4
@@ -21804,7 +22019,7 @@ snapshots:
 
   '@types/babel__template@7.4.4':
     dependencies:
-      '@babel/parser': 7.29.0
+      '@babel/parser': 7.29.2
       '@babel/types': 7.29.0
 
   '@types/babel__traverse@7.28.0':
@@ -22417,7 +22632,7 @@ snapshots:
       sirv: 3.0.2
       tinyglobby: 0.2.15
       tinyrainbow: 3.0.3
-      vitest: 4.0.18(@opentelemetry/api@1.9.0)(@types/node@25.5.0)(@vitest/ui@4.0.18)(happy-dom@20.7.0)(jiti@2.6.1)(less@4.5.1)(lightningcss@1.32.0)(msw@2.12.10(@types/node@25.5.0)(typescript@5.9.3))(sass@1.97.1)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.2)
+      vitest: 4.0.18(@opentelemetry/api@1.9.0)(@types/node@25.3.2)(@vitest/ui@4.0.18)(happy-dom@20.7.0)(jiti@2.6.1)(less@4.5.1)(lightningcss@1.32.0)(msw@2.12.10(@types/node@25.3.2)(typescript@5.9.3))(sass@1.97.1)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.2)
 
   '@vitest/utils@4.0.18':
     dependencies:
@@ -22435,7 +22650,7 @@ snapshots:
 
   '@vue/compiler-core@3.5.29':
     dependencies:
-      '@babel/parser': 7.29.0
+      '@babel/parser': 7.29.2
       '@vue/shared': 3.5.29
       entities: 7.0.1
       estree-walker: 2.0.2
@@ -22448,7 +22663,7 @@ snapshots:
 
   '@vue/compiler-sfc@3.5.29':
     dependencies:
-      '@babel/parser': 7.29.0
+      '@babel/parser': 7.29.2
       '@vue/compiler-core': 3.5.29
       '@vue/compiler-dom': 3.5.29
       '@vue/compiler-ssr': 3.5.29
@@ -22785,7 +23000,7 @@ snapshots:
   babel-dead-code-elimination@1.0.12:
     dependencies:
       '@babel/core': 7.29.0
-      '@babel/parser': 7.29.0
+      '@babel/parser': 7.29.2
       '@babel/traverse': 7.29.0
       '@babel/types': 7.29.0
     transitivePeerDependencies:
@@ -26152,7 +26367,7 @@ snapshots:
   istanbul-lib-instrument@5.2.1:
     dependencies:
       '@babel/core': 7.29.0
-      '@babel/parser': 7.29.0
+      '@babel/parser': 7.29.2
       '@istanbuljs/schema': 0.1.3
       istanbul-lib-coverage: 3.2.2
       semver: 6.3.1
@@ -26309,8 +26524,7 @@ snapshots:
   jpeg-js@0.4.4:
     optional: true
 
-  js-base64@3.7.8:
-    optional: true
+  js-base64@3.7.8: {}
 
   js-beautify@1.15.4:
     dependencies:
@@ -26772,7 +26986,7 @@ snapshots:
 
   magicast@0.2.11:
     dependencies:
-      '@babel/parser': 7.29.0
+      '@babel/parser': 7.29.2
       '@babel/types': 7.29.0
       recast: 0.23.11
 
@@ -27492,7 +27706,7 @@ snapshots:
     dependencies:
       '@babel/core': 7.29.0
       '@babel/generator': 7.29.1
-      '@babel/parser': 7.29.0
+      '@babel/parser': 7.29.2
       '@babel/types': 7.29.0
       flow-enums-runtime: 0.0.6
       metro: 0.83.4
@@ -27581,7 +27795,7 @@ snapshots:
       '@babel/code-frame': 7.29.0
       '@babel/core': 7.29.0
       '@babel/generator': 7.29.1
-      '@babel/parser': 7.29.0
+      '@babel/parser': 7.29.2
       '@babel/template': 7.28.6
       '@babel/traverse': 7.29.0
       '@babel/types': 7.29.0
@@ -28493,7 +28707,7 @@ snapshots:
     dependencies:
       citty: 0.2.1
       pathe: 2.0.3
-      tinyexec: 1.0.2
+      tinyexec: 1.0.4
 
   oauth2-mock-server@8.2.2:
     dependencies:
@@ -28692,6 +28906,8 @@ snapshots:
   pako@0.2.9: {}
 
   pako@1.0.11: {}
+
+  pako@2.1.0: {}
 
   parent-module@1.0.1:
     dependencies:
@@ -31708,7 +31924,7 @@ snapshots:
       rolldown: 1.0.0-rc.8
       rolldown-plugin-dts: 0.22.4(oxc-resolver@11.19.0)(rolldown@1.0.0-rc.8)(typescript@5.9.3)
       semver: 7.7.4
-      tinyexec: 1.0.2
+      tinyexec: 1.0.4
       tinyglobby: 0.2.15
       tree-kill: 1.2.2
       unconfig-core: 7.5.0
@@ -32478,7 +32694,7 @@ snapshots:
       - tsx
       - yaml
 
-  vitest@4.1.0(@opentelemetry/api@1.9.0)(@types/node@25.5.0)(@vitest/ui@4.0.18)(happy-dom@20.7.0)(msw@2.12.10(@types/node@25.5.0)(typescript@5.9.3))(vite@7.3.1(@types/node@25.5.0)(jiti@2.6.1)(less@4.5.1)(lightningcss@1.32.0)(sass@1.97.1)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.2)):
+  vitest@4.1.0(@opentelemetry/api@1.9.0)(@types/node@25.5.0)(@vitest/ui@4.0.18(vitest@4.0.18))(happy-dom@20.7.0)(msw@2.12.10(@types/node@25.5.0)(typescript@5.9.3))(vite@7.3.1(@types/node@25.5.0)(jiti@2.6.1)(less@4.5.1)(lightningcss@1.32.0)(sass@1.97.1)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.2)):
     dependencies:
       '@vitest/expect': 4.1.0
       '@vitest/mocker': 4.1.0(msw@2.12.10(@types/node@25.5.0)(typescript@5.9.3))(vite@7.3.1(@types/node@25.5.0)(jiti@2.6.1)(less@4.5.1)(lightningcss@1.32.0)(sass@1.97.1)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.2))
@@ -32884,6 +33100,10 @@ snapshots:
       zod: 3.25.76
 
   zod-to-json-schema@3.25.1(zod@4.3.6):
+    dependencies:
+      zod: 4.3.6
+
+  zod-validation-error@5.0.0(zod@4.3.6):
     dependencies:
       zod: 4.3.6
 

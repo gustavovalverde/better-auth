@@ -440,6 +440,12 @@ export const oauthProvider = <O extends OAuthOptions<Scope[]>>(options: O) => {
 						redirect_uri: SafeUrlSchema.optional(),
 						scope: z.string().optional(),
 						state: z.string().optional(),
+						// OIDC4IDA / OIDC4VCI pass-through parameters.
+						// Must be included in schema to ensure they are preserved
+						// in ctx.query and later persisted with the authorization code.
+						claims: z.string().optional(),
+						authorization_details: z.string().optional(),
+						issuer_state: z.string().optional(),
 						code_challenge: z.string().optional(),
 						code_challenge_method: z.enum(["S256"]).optional(),
 						nonce: z.string().optional(),

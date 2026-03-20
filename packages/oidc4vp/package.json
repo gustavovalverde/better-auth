@@ -1,0 +1,69 @@
+{
+  "name": "@better-auth/oidc4vp",
+  "author": "Gustavo Valverde",
+  "version": "0.0.0",
+  "type": "module",
+  "main": "dist/index.mjs",
+  "types": "dist/index.d.mts",
+  "license": "MIT",
+  "homepage": "https://www.better-auth.com/docs/plugins/oidc4vp",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/better-auth/better-auth.git",
+    "directory": "packages/oidc4vp"
+  },
+  "keywords": [
+    "auth",
+    "openid",
+    "oidc4vp",
+    "verifiable-presentations",
+    "sd-jwt"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "module": "dist/index.mjs",
+  "description": "OIDC4VP plugin for Better Auth (presentation verification)",
+  "scripts": {
+    "test": "vitest",
+    "coverage": "vitest run --coverage --coverage.provider=istanbul",
+    "lint:package": "publint run --strict",
+    "lint:types": "attw --profile esm-only --pack .",
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "typecheck": "tsc --project tsconfig.json"
+  },
+  "exports": {
+    ".": {
+      "dev-source": "./src/index.ts",
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
+    }
+  },
+  "typesVersions": {
+    "*": {
+      "*": [
+        "./dist/index.d.mts"
+      ]
+    }
+  },
+  "dependencies": {
+    "@better-auth/utils": "catalog:",
+    "@openid4vc/openid4vp": "^0.4.4",
+    "@sd-jwt/sd-jwt-vc": "^0.19.0",
+    "better-call": "catalog:",
+    "jose": "^6.1.3",
+    "zod": "^4.1.5"
+  },
+  "devDependencies": {
+    "@better-auth/core": "workspace:*",
+    "@better-auth/oauth-provider": "workspace:*",
+    "@better-auth/oidc4vci": "workspace:*",
+    "better-auth": "workspace:*",
+    "tsdown": "catalog:"
+  },
+  "peerDependencies": {
+    "@better-auth/core": "workspace:*",
+    "better-auth": "workspace:*"
+  }
+}

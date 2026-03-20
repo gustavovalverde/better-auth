@@ -193,6 +193,9 @@ export type JWKOptions =
 	| {
 			alg: "RS256"; // RSA with SHA-256
 			modulusLength?: number | undefined; // Default to 2048 or higher
+	  }
+	| {
+			alg: string; // Custom algorithm (e.g. ML-DSA-65) — requires jwt.sign and jwks.remoteUrl
 	  };
 
 export type JWSAlgorithms = JWKOptions["alg"];
@@ -203,6 +206,6 @@ export interface Jwk {
 	privateKey: string;
 	createdAt: Date;
 	expiresAt?: Date;
-	alg?: JWSAlgorithms | undefined;
-	crv?: ("Ed25519" | "P-256" | "P-521") | undefined;
+	alg?: string | undefined;
+	crv?: string | undefined;
 }
