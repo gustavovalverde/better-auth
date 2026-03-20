@@ -253,6 +253,7 @@ async function createIdToken(
 		...userClaims,
 		auth_time: authTimeSec,
 		acr,
+		at_hash: atHash,
 		...customClaims,
 		iss: jwtPluginOptions?.jwt?.issuer ?? ctx.context.baseURL,
 		sub: resolvedSub,
@@ -932,6 +933,15 @@ async function handleAuthorizationCodeGrant(
 			// Malformed authorization_details — skip propagation
 		}
 	}
+	if (verificationValue.authSession) {
+		extra = {
+			...extra,
+			tokenResponse: {
+				...extra?.tokenResponse,
+				auth_session: verificationValue.authSession,
+			},
+		};
+	}
 
 	return createUserTokens(
 		ctx,
@@ -1090,15 +1100,21 @@ async function handleClientCredentialsGrant(
 					},
 				);
 
-	ctx.setHeader("Cache-Control", "no-store");
-	ctx.setHeader("Pragma", "no-cache");
-	return {
-		access_token: accessToken,
-		expires_in: exp - iat,
-		expires_at: exp,
-		token_type: "Bearer",
-		scope: requestedScopes.join(" "),
-	};
+	return ctx.json(
+		{
+			access_token: accessToken,
+			expires_in: exp - iat,
+			expires_at: exp,
+			token_type: "Bearer",
+			scope: requestedScopes.join(" "),
+		},
+		{
+			headers: {
+				"Cache-Control": "no-store",
+				Pragma: "no-cache",
+			},
+		},
+	);
 }
 
 /**

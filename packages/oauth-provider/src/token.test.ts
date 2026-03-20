@@ -7,15 +7,17 @@ import {
 	createAuthorizationCodeRequest,
 	createAuthorizationURL,
 	createRefreshAccessTokenRequest,
+	generateCodeChallenge,
 } from "better-auth/oauth2";
 import { jwt } from "better-auth/plugins/jwt";
 import { getTestInstance } from "better-auth/test";
-import { createLocalJWKSet, decodeJwt, jwtVerify } from "jose";
+import { base64url, createLocalJWKSet, decodeJwt, jwtVerify } from "jose";
 import { beforeAll, describe, expect, it } from "vitest";
 import { oauthProviderClient } from "./client";
 import { oauthProvider } from "./oauth";
-import type { OAuthOptions, Scope } from "./types";
+import type { OAuthOptions, Scope, VerificationValue } from "./types";
 import type { OAuthClient } from "./types/oauth";
+import { storeToken } from "./utils";
 
 type MakeRequired<T, K extends keyof T> = Omit<T, K> & Required<Pick<T, K>>;
 
@@ -3640,179 +3642,176 @@ describe("at_hash in id tokens", async () => {
 	});
 });
 
-	const authServerBaseUrl = "http://localhost:3000";
-	const CUSTOM_GRANT = "urn:test:custom-grant";
-	const CUSTOM_GRANT_B = "urn:test:custom-grant-b";
+const authServerBaseUrl = "http://localhost:3000";
+const CUSTOM_GRANT = "urn:test:custom-grant";
+const CUSTOM_GRANT_B = "urn:test:custom-grant-b";
 
-	const customGrantPlugin = {
-		id: "custom-grant-plugin",
-		dependencies: ["oauth-provider"],
-		extensions: {
-			"oauth-provider": {
-				grantTypes: {
-					[CUSTOM_GRANT]: async (ctx) => {
-						return ctx.json({
-							access_token: "custom-token-value",
-							token_type: "Bearer",
-							expires_in: 3600,
-							scope: "custom",
-							custom_field: ctx.body?.custom_param ?? "none",
-						});
-					},
+const customGrantPlugin = {
+	id: "custom-grant-plugin",
+	dependencies: ["oauth-provider"],
+	extensions: {
+		"oauth-provider": {
+			grantTypes: {
+				[CUSTOM_GRANT]: async (ctx) => {
+					return ctx.json({
+						access_token: "custom-token-value",
+						token_type: "Bearer",
+						expires_in: 3600,
+						scope: "custom",
+						custom_field: ctx.body?.custom_param ?? "none",
+					});
 				},
-				grantTypeURIs: [CUSTOM_GRANT],
 			},
+			grantTypeURIs: [CUSTOM_GRANT],
 		},
-	} satisfies import("better-auth/types").BetterAuthPlugin;
+	},
+} satisfies import("better-auth/types").BetterAuthPlugin;
 
-	const secondGrantPlugin = {
-		id: "second-grant-plugin",
-		dependencies: ["oauth-provider"],
-		extensions: {
-			"oauth-provider": {
-				grantTypes: {
-					[CUSTOM_GRANT_B]: async (ctx) => {
-						return ctx.json({
-							access_token: "second-custom-token",
-							token_type: "Bearer",
-							expires_in: 1800,
-							scope: "second",
-						});
-					},
+const secondGrantPlugin = {
+	id: "second-grant-plugin",
+	dependencies: ["oauth-provider"],
+	extensions: {
+		"oauth-provider": {
+			grantTypes: {
+				[CUSTOM_GRANT_B]: async (ctx) => {
+					return ctx.json({
+						access_token: "second-custom-token",
+						token_type: "Bearer",
+						expires_in: 1800,
+						scope: "second",
+					});
 				},
-				grantTypeURIs: [CUSTOM_GRANT_B],
 			},
+			grantTypeURIs: [CUSTOM_GRANT_B],
 		},
-	} satisfies import("better-auth/types").BetterAuthPlugin;
+	},
+} satisfies import("better-auth/types").BetterAuthPlugin;
 
-	const { auth, signInWithTestUser } = await getTestInstance({
-		baseURL: authServerBaseUrl,
-		plugins: [
-			jwt({
-				jwt: {
-					issuer: authServerBaseUrl,
-				},
-			}),
-			oauthProvider({
-				loginPage: "/login",
-				consentPage: "/consent",
-				silenceWarnings: {
-					oauthAuthServerConfig: true,
-					openidConfig: true,
-				},
-			}),
-			customGrantPlugin,
-			secondGrantPlugin,
-		],
-	});
-
-	const { headers } = await signInWithTestUser();
-	let oauthClient: OAuthClient | null;
-
-	beforeAll(async () => {
-		const response = await auth.api.adminCreateOAuthClient({
-			headers,
-			body: {
-				redirect_uris: ["http://localhost:5000/callback"],
-				skip_consent: true,
+const { auth, signInWithTestUser } = await getTestInstance({
+	baseURL: authServerBaseUrl,
+	plugins: [
+		jwt({
+			jwt: {
+				issuer: authServerBaseUrl,
 			},
-		});
-		oauthClient = response;
+		}),
+		oauthProvider({
+			loginPage: "/login",
+			consentPage: "/consent",
+			silenceWarnings: {
+				oauthAuthServerConfig: true,
+				openidConfig: true,
+			},
+		}),
+		customGrantPlugin,
+		secondGrantPlugin,
+	],
+});
+
+const { headers } = await signInWithTestUser();
+let oauthClient: OAuthClient | null;
+
+beforeAll(async () => {
+	const response = await auth.api.adminCreateOAuthClient({
+		headers,
+		body: {
+			redirect_uris: ["http://localhost:5000/callback"],
+			skip_consent: true,
+		},
 	});
+	oauthClient = response;
+});
 
-	it("should dispatch to a custom grant handler", async () => {
-		const response = await auth.handler(
-			new Request(`${authServerBaseUrl}/api/auth/oauth2/token`, {
-				method: "POST",
-				headers: {
-					"content-type": "application/x-www-form-urlencoded",
-					authorization: `Basic ${btoa(`${oauthClient!.client_id}:${oauthClient!.client_secret}`)}`,
-				},
-				body: new URLSearchParams({
-					grant_type: CUSTOM_GRANT,
-				}).toString(),
-			}),
-		);
+it("should dispatch to a custom grant handler", async () => {
+	const response = await auth.handler(
+		new Request(`${authServerBaseUrl}/api/auth/oauth2/token`, {
+			method: "POST",
+			headers: {
+				"content-type": "application/x-www-form-urlencoded",
+				authorization: `Basic ${btoa(`${oauthClient!.client_id}:${oauthClient!.client_secret}`)}`,
+			},
+			body: new URLSearchParams({
+				grant_type: CUSTOM_GRANT,
+			}).toString(),
+		}),
+	);
 
-		expect(response.status).toBe(200);
-		const body = await response.json();
-		expect(body.access_token).toBe("custom-token-value");
-		expect(body.token_type).toBe("Bearer");
-		expect(body.scope).toBe("custom");
-	});
+	expect(response.status).toBe(200);
+	const body = await response.json();
+	expect(body.access_token).toBe("custom-token-value");
+	expect(body.token_type).toBe("Bearer");
+	expect(body.scope).toBe("custom");
+});
 
-	it("should pass through extra body fields", async () => {
-		const response = await auth.handler(
-			new Request(`${authServerBaseUrl}/api/auth/oauth2/token`, {
-				method: "POST",
-				headers: {
-					"content-type": "application/x-www-form-urlencoded",
-					authorization: `Basic ${btoa(`${oauthClient!.client_id}:${oauthClient!.client_secret}`)}`,
-				},
-				body: new URLSearchParams({
-					grant_type: CUSTOM_GRANT,
-					custom_param: "my-custom-value",
-				}).toString(),
-			}),
-		);
+it("should pass through extra body fields", async () => {
+	const response = await auth.handler(
+		new Request(`${authServerBaseUrl}/api/auth/oauth2/token`, {
+			method: "POST",
+			headers: {
+				"content-type": "application/x-www-form-urlencoded",
+				authorization: `Basic ${btoa(`${oauthClient!.client_id}:${oauthClient!.client_secret}`)}`,
+			},
+			body: new URLSearchParams({
+				grant_type: CUSTOM_GRANT,
+				custom_param: "my-custom-value",
+			}).toString(),
+		}),
+	);
 
-		expect(response.status).toBe(200);
-		const body = await response.json();
-		expect(body.custom_field).toBe("my-custom-value");
-	});
+	expect(response.status).toBe(200);
+	const body = await response.json();
+	expect(body.custom_field).toBe("my-custom-value");
+});
 
-	it("should reject unknown grant types not in allowlist", async () => {
-		const response = await auth.handler(
-			new Request(`${authServerBaseUrl}/api/auth/oauth2/token`, {
-				method: "POST",
-				headers: {
-					"content-type": "application/x-www-form-urlencoded",
-					authorization: `Basic ${btoa(`${oauthClient!.client_id}:${oauthClient!.client_secret}`)}`,
-				},
-				body: new URLSearchParams({
-					grant_type: "urn:unknown:not-registered",
-				}).toString(),
-			}),
-		);
+it("should reject unknown grant types not in allowlist", async () => {
+	const response = await auth.handler(
+		new Request(`${authServerBaseUrl}/api/auth/oauth2/token`, {
+			method: "POST",
+			headers: {
+				"content-type": "application/x-www-form-urlencoded",
+				authorization: `Basic ${btoa(`${oauthClient!.client_id}:${oauthClient!.client_secret}`)}`,
+			},
+			body: new URLSearchParams({
+				grant_type: "urn:unknown:not-registered",
+			}).toString(),
+		}),
+	);
 
-		expect(response.status).toBe(400);
-		const body = await response.json();
-		expect(body.error).toBe("unsupported_grant_type");
-	});
+	expect(response.status).toBe(400);
+	const body = await response.json();
+	expect(body.error).toBe("unsupported_grant_type");
+});
 
-	it("should support multiple plugins each registering different grant types", async () => {
-		const response = await auth.handler(
-			new Request(`${authServerBaseUrl}/api/auth/oauth2/token`, {
-				method: "POST",
-				headers: {
-					"content-type": "application/x-www-form-urlencoded",
-					authorization: `Basic ${btoa(`${oauthClient!.client_id}:${oauthClient!.client_secret}`)}`,
-				},
-				body: new URLSearchParams({
-					grant_type: CUSTOM_GRANT_B,
-				}).toString(),
-			}),
-		);
+it("should support multiple plugins each registering different grant types", async () => {
+	const response = await auth.handler(
+		new Request(`${authServerBaseUrl}/api/auth/oauth2/token`, {
+			method: "POST",
+			headers: {
+				"content-type": "application/x-www-form-urlencoded",
+				authorization: `Basic ${btoa(`${oauthClient!.client_id}:${oauthClient!.client_secret}`)}`,
+			},
+			body: new URLSearchParams({
+				grant_type: CUSTOM_GRANT_B,
+			}).toString(),
+		}),
+	);
 
-		expect(response.status).toBe(200);
-		const body = await response.json();
-		expect(body.access_token).toBe("second-custom-token");
-		expect(body.scope).toBe("second");
-	});
+	expect(response.status).toBe(200);
+	const body = await response.json();
+	expect(body.access_token).toBe("second-custom-token");
+	expect(body.scope).toBe("second");
+});
 
-	it("should include extension grantTypeURIs in discovery metadata", async () => {
-		const metadata = (await auth.api.getOAuthServerConfig()) as Record<
-			string,
-			unknown
-		>;
-		expect(metadata.grant_types_supported as string[]).toContain(CUSTOM_GRANT);
-		expect(metadata.grant_types_supported as string[]).toContain(
-			CUSTOM_GRANT_B,
-		);
-		expect(metadata.grant_types_supported as string[]).toContain(
-			"authorization_code",
-		);
-	});
+it("should include extension grantTypeURIs in discovery metadata", async () => {
+	const metadata = (await auth.api.getOAuthServerConfig()) as Record<
+		string,
+		unknown
+	>;
+	expect(metadata.grant_types_supported as string[]).toContain(CUSTOM_GRANT);
+	expect(metadata.grant_types_supported as string[]).toContain(CUSTOM_GRANT_B);
+	expect(metadata.grant_types_supported as string[]).toContain(
+		"authorization_code",
+	);
 });
 
 describe("oauth token - extension metadata contributions", async () => {
@@ -4028,8 +4027,6 @@ describe("oauth token - extension token claims", async () => {
 		expect(decoded.verified_claims).toEqual({
 			trust_framework: "eidas",
 		});
-	});
-});
 	});
 });
 
