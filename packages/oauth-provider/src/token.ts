@@ -35,9 +35,13 @@ export async function tokenEndpoint(
 	ctx: GenericEndpointContext,
 	opts: OAuthOptions<Scope[]>,
 ) {
-	const grantType: GrantType | undefined = ctx.body?.grant_type;
+	const grantType: string | undefined = ctx.body?.grant_type;
 
-	if (opts.grantTypes && grantType && !opts.grantTypes.includes(grantType)) {
+	if (
+		opts.grantTypes &&
+		grantType &&
+		!opts.grantTypes.includes(grantType as GrantType)
+	) {
 		throw new APIError("BAD_REQUEST", {
 			error_description: `unsupported grant_type ${grantType}`,
 			error: "unsupported_grant_type",
@@ -601,18 +605,39 @@ export async function createUserTokens(
 				: undefined,
 	]);
 
-	ctx.setHeader("Cache-Control", "no-store");
-	ctx.setHeader("Pragma", "no-cache");
-	return {
-		...extra?.tokenResponse,
-		access_token: accessToken,
-		expires_in: exp - iat,
-		expires_at: exp,
-		token_type: tokenType,
-		refresh_token: refreshToken?.token,
-		scope: scopes.join(" "),
-		id_token: idToken,
-	};
+	// ID token created after access token so at_hash can be computed
+	const idToken = isIdToken
+		? await createIdToken(
+				ctx,
+				opts,
+				user,
+				client,
+				scopes,
+				nonce,
+				sessionId,
+				authTime,
+				accessToken,
+			)
+		: undefined;
+
+	return ctx.json(
+		{
+			...extra?.tokenResponse,
+			access_token: accessToken,
+			expires_in: exp - iat,
+			expires_at: exp,
+			token_type: tokenType,
+			refresh_token: refreshToken?.token,
+			scope: scopes.join(" "),
+			id_token: idToken,
+		},
+		{
+			headers: {
+				"Cache-Control": "no-store",
+				Pragma: "no-cache",
+			},
+		},
+	);
 }
 
 /** Checks verification value */
@@ -745,13 +770,6 @@ async function handleAuthorizationCodeGrant(
 			error: "invalid_request",
 		});
 	}
-	if (!redirect_uri) {
-		throw new APIError("BAD_REQUEST", {
-			error_description: "redirect_uri is required",
-			error: "invalid_request",
-		});
-	}
-
 	const isAuthCodeWithSecret = client_id && client_secret;
 	const isAuthCodeWithPkce = client_id && code && code_verifier;
 
