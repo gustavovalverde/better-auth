@@ -8,7 +8,7 @@ export interface RedisStorageConfig {
 	client: Redis;
 	/**
 	 * Optional key prefix for all keys stored in Redis
-	 * @default "better-auth:"
+	 * @default "ba:"
 	 */
 	keyPrefix?: string | undefined;
 }
@@ -35,7 +35,7 @@ export interface RedisStorageConfig {
  * @returns SecondaryStorage implementation for Better Auth
  */
 export function redisStorage(config: RedisStorageConfig) {
-	const { client, keyPrefix = "better-auth:" } = config;
+	const { client, keyPrefix = "ba:" } = config;
 
 	const prefixKey = (key: string): string => {
 		return `${keyPrefix}${key}`;
