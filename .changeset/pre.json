@@ -24,5 +24,9 @@
     "@better-auth/telemetry": "1.5.7",
     "@better-auth/test-utils": "1.5.7"
   },
-  "changesets": []
+  "changesets": [
+    "add-redis-default-ttl",
+    "fix-redis-clear-empty",
+    "v2-redis-prefix"
+  ]
 }
