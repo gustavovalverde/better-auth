@@ -1,0 +1,98 @@
+name: Verify Changesets
+
+on:
+  pull_request:
+    types: [opened, synchronize, labeled, unlabeled]
+
+permissions: {}
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4.2.0
+
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+        with:
+          node-version-file: '.nvmrc'
+          cache: pnpm
+
+      - run: pnpm install
+
+      - name: Check for changesets
+        id: check
+        run: |
+          CHANGESETS=$(find .changeset -name '*.md' ! -name 'README.md' | wc -l | tr -d ' ')
+          echo "count=$CHANGESETS" >> "$GITHUB_OUTPUT"
+
+          if [ "$CHANGESETS" -eq 0 ]; then
+            echo "No changesets found"
+            echo "has_changesets=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Found $CHANGESETS changeset(s)"
+            echo "has_changesets=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Allow skip via label
+        if: steps.check.outputs.has_changesets == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          LABELS=$(gh pr view "$PR_NUMBER" --json labels --jq '.labels[].name' 2>/dev/null || echo "")
+          if echo "$LABELS" | grep -q "skip-changeset"; then
+            echo "Skipping changeset requirement (skip-changeset label found)"
+            exit 0
+          fi
+
+          # Allow PRs that only touch docs, CI, or non-package files
+          CHANGED=$(git diff --name-only "origin/$BASE_REF"...HEAD)
+          PKG_CHANGES=$(echo "$CHANGED" | grep -c '^packages/' || true)
+          if [ "$PKG_CHANGES" -eq 0 ]; then
+            echo "No package changes detected, changeset not required"
+            exit 0
+          fi
+
+          echo "::error::Missing changeset. Add one with 'pnpm changeset' or add the 'skip-changeset' label."
+          exit 1
+
+      - name: Verify bump types
+        if: steps.check.outputs.has_changesets == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          # Check if pre-release mode is active (all bump types allowed)
+          if [ -f ".changeset/pre.json" ]; then
+            echo "Pre-release mode active, all bump types allowed"
+            exit 0
+          fi
+
+          LABELS=$(gh pr view "$PR_NUMBER" --json labels --jq '.labels[].name' 2>/dev/null || echo "")
+          HAS_MINOR=$(echo "$LABELS" | grep -c "^minor$" || true)
+          HAS_MAJOR=$(echo "$LABELS" | grep -c "^major$" || true)
+
+          for f in .changeset/*.md; do
+            [ "$f" = ".changeset/README.md" ] && continue
+            # Extract bump types from YAML frontmatter
+            BUMPS=$(sed -n '/^---$/,/^---$/p' "$f" | grep -oE '(major|minor|patch)' | sort -u)
+            if echo "$BUMPS" | grep -q "major" && [ "$HAS_MAJOR" -eq 0 ]; then
+              echo "::error::Changeset $f contains a 'major' bump but the PR lacks a 'major' label."
+              exit 1
+            fi
+            if echo "$BUMPS" | grep -q "minor" && [ "$HAS_MINOR" -eq 0 ] && [ "$HAS_MAJOR" -eq 0 ]; then
+              echo "::error::Changeset $f contains a 'minor' bump but the PR lacks a 'minor' or 'major' label."
+              exit 1
+            fi
+          done
+
+          echo "All bump types are allowed by PR labels"

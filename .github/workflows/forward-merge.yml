@@ -1,0 +1,86 @@
+name: Forward Merge (main to next)
+
+on:
+  workflow_run:
+    workflows: ['Release']
+    types: [completed]
+    branches: [main]
+  push:
+    branches: [main]
+    paths-ignore:
+      - '.changeset/**'
+
+permissions: {}
+
+jobs:
+  forward-merge:
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'push' ||
+      github.event.workflow_run.conclusion == 'success'
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Generate App Token
+        id: app-token
+        uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859 # v3.0.0
+        if: vars.RELEASE_APP_ID != ''
+        with:
+          app-id: ${{ vars.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+          token: ${{ steps.app-token.outputs.token || secrets.GITHUB_TOKEN }}
+
+      - name: Check for divergence
+        id: check
+        run: |
+          git fetch origin next || { echo "skip=true" >> "$GITHUB_OUTPUT"; exit 0; }
+          AHEAD=$(git rev-list --count origin/next..origin/main)
+          if [ "$AHEAD" -eq 0 ]; then
+            echo "No new commits on main since last sync"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Found $AHEAD commit(s) to sync"
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check for existing PR
+        if: steps.check.outputs.skip != 'true'
+        id: existing
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GITHUB_TOKEN }}
+        run: |
+          PR=$(gh pr list --head main --base next --state open --json number --jq '.[0].number // empty')
+          if [ -n "$PR" ]; then
+            echo "Forward-merge PR #$PR already exists"
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create forward-merge PR
+        if: steps.check.outputs.skip != 'true' && steps.existing.outputs.exists != 'true'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr create \
+            --base next \
+            --head main \
+            --title "chore: sync main to next" \
+            --body "Automated forward merge to keep next as a superset of main." \
+            || true
+
+      - name: Enable auto-merge
+        if: steps.check.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GITHUB_TOKEN }}
+        run: |
+          PR=$(gh pr list --head main --base next --state open --json number --jq '.[0].number // empty')
+          if [ -n "$PR" ]; then
+            gh pr merge "$PR" --auto --merge || true
+          fi

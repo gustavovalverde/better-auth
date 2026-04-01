@@ -1,0 +1,41 @@
+name: Backport
+
+on:
+  pull_request_target:
+    types: [closed]
+  issue_comment:
+    types: [created]
+
+permissions: {}
+
+jobs:
+  backport:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    # Run when PR is merged OR when /backport comment is posted on a PR
+    # Comment body is only checked in the if-condition (safe), never in a run: command
+    if: >
+      (
+        github.event_name == 'pull_request_target' &&
+        github.event.pull_request.merged
+      ) || (
+        github.event_name == 'issue_comment' &&
+        github.event.issue.pull_request &&
+        startsWith(github.event.comment.body, '/backport')
+      )
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Create backport PRs
+        uses: korthout/backport-action@v4
+        with:
+          label_pattern: '^backport ([^ ]+)$'
+          pull_title: '[backport ${target_branch}] ${pull_title}'
+          auto_merge_enabled: ${{ contains(github.event.pull_request.labels.*.name, 'backport-auto-merge') }}
+          auto_merge_method: squash
+          experimental: '{"conflict_resolution": "draft_commit_conflicts"}'
