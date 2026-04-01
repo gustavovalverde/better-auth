@@ -11,6 +11,12 @@ export interface RedisStorageConfig {
 	 * @default "better-auth:"
 	 */
 	keyPrefix?: string | undefined;
+	/**
+	 * Default TTL in seconds applied to all set operations
+	 * when no explicit TTL is provided. Set to 0 or undefined
+	 * to disable.
+	 */
+	defaultTTL?: number | undefined;
 }
 
 /**
@@ -35,7 +41,7 @@ export interface RedisStorageConfig {
  * @returns SecondaryStorage implementation for Better Auth
  */
 export function redisStorage(config: RedisStorageConfig) {
-	const { client, keyPrefix = "better-auth:" } = config;
+	const { client, keyPrefix = "better-auth:", defaultTTL } = config;
 
 	const prefixKey = (key: string): string => {
 		return `${keyPrefix}${key}`;
@@ -48,8 +54,9 @@ export function redisStorage(config: RedisStorageConfig) {
 
 		async set(key: string, value: string, ttl?: number | undefined) {
 			const prefixedKey = prefixKey(key);
-			if (ttl !== undefined && ttl > 0) {
-				await client.setex(prefixedKey, ttl, value);
+			const effectiveTTL = ttl ?? defaultTTL;
+			if (effectiveTTL !== undefined && effectiveTTL > 0) {
+				await client.setex(prefixedKey, effectiveTTL, value);
 			} else {
 				await client.set(prefixedKey, value);
 			}
