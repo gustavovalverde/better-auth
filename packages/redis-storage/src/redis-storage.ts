@@ -73,7 +73,9 @@ export function redisStorage(config: RedisStorageConfig) {
 
 		async clear(): Promise<void> {
 			const keys = await client.keys(`${keyPrefix}*`);
-			await client.del(...keys);
+			if (keys.length > 0) {
+				await client.del(...keys);
+			}
 		},
 	} satisfies SecondaryStorage & {
 		listKeys: () => Promise<string[]>;
