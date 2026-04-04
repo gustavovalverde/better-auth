@@ -90,3 +90,4 @@ export const scim = (options?: SCIMOptions) => {
 };
 
 export * from "./types";
+// feature: SCIM provisioning improvements
