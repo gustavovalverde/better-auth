@@ -1,0 +1,606 @@
+- generic [ref=e4]:
+  - generic [ref=e6]:
+    - link "Skip to content" [ref=e8] [cursor=pointer]:
+      - /url: "#main"
+      - generic [ref=e9]:
+        - text: Skip to content
+        - img [ref=e10]
+    - navigation "Sidebar":
+      - generic [ref=e12]:
+        - generic [ref=e14]:
+          - button "Better Auth Close sidebar New page More options" [ref=e19] [cursor=pointer]:
+            - generic [ref=e30]: Better Auth
+            - generic [ref=e32]:
+              - button "Close sidebar" [ref=e34]:
+                - img [ref=e35]
+              - generic [ref=e38]:
+                - button "New page" [ref=e40]:
+                  - img [ref=e41]
+                - button "More options" [ref=e46]:
+                  - img [ref=e47]
+          - generic [ref=e49] [cursor=pointer]:
+            - button "Search" [ref=e51]:
+              - generic [ref=e52]:
+                - img [ref=e54]
+                - generic [ref=e56]: Search
+            - link "Home" [ref=e58]:
+              - /url: /cf8f28c30b2143af933d1c692a57af3f?pvs=16
+              - generic [ref=e59]:
+                - img [ref=e61]
+                - generic [ref=e63]: Home
+            - generic [ref=e64]:
+              - img [ref=e66]
+              - generic [ref=e70]: Meetings
+            - generic [ref=e71]:
+              - img [ref=e73]
+              - generic [ref=e76]: Notion AI
+            - generic [ref=e77]:
+              - img [ref=e79]
+              - generic [ref=e81]: Inbox
+            - generic [ref=e82]:
+              - img [ref=e84]
+              - generic [ref=e86]: Library
+          - generic [ref=e92]:
+            - generic [ref=e95] [cursor=pointer]:
+              - button "Recents" [expanded] [ref=e96]:
+                - generic [ref=e97]: Recents
+                - img [ref=e98]
+              - tree "Recents" [ref=e100]:
+                - generic [ref=e102]:
+                  - 'treeitem "Forward Sync: Trade-off Analysis" [ref=e104]':
+                    - generic [ref=e105]:
+                      - img "Change page icon" [ref=e111]:
+                        - img [ref=e112]
+                      - generic [ref=e116]: "Forward Sync: Trade-off Analysis"
+                  - treeitem "Release Flow" [ref=e118]:
+                    - generic [ref=e119]:
+                      - img "Change page icon" [ref=e125]:
+                        - img [ref=e126]
+                      - generic [ref=e130]: Release Flow
+                  - treeitem "Changelog & Release Notes" [ref=e132]:
+                    - generic [ref=e133]:
+                      - img "Change page icon" [ref=e139]:
+                        - img [ref=e140]
+                      - generic [ref=e144]: Changelog & Release Notes
+                  - treeitem "Release Process" [ref=e146]:
+                    - generic [ref=e147]:
+                      - img "Change page icon" [ref=e153]:
+                        - img [ref=e154]
+                      - generic [ref=e158]: Release Process
+                  - treeitem "Developer Guide" [ref=e160]:
+                    - generic [ref=e161]:
+                      - img "Change page icon" [ref=e167]:
+                        - img [ref=e168]
+                      - generic [ref=e172]: Developer Guide
+            - generic [ref=e175] [cursor=pointer]:
+              - button "Private" [expanded] [ref=e176]:
+                - generic [ref=e177]: Private
+                - img [ref=e178]
+              - tree "Private" [ref=e181]:
+                - generic [ref=e183]:
+                  - treeitem "Scratchpad" [ref=e185]:
+                    - generic [ref=e186]:
+                      - img "Change page icon" [ref=e194]
+                      - generic [ref=e196]: Scratchpad
+                  - treeitem "1:1 notes" [ref=e198]:
+                    - generic [ref=e199]:
+                      - img "Change page icon" [ref=e207]
+                      - generic [ref=e209]: 1:1 notes
+                  - treeitem "Getting Started" [ref=e211]:
+                    - generic [ref=e212]:
+                      - img "Change page icon" [ref=e220]: 👋
+                      - generic [ref=e222]: Getting Started
+                  - treeitem "To Do List" [ref=e224]:
+                    - generic [ref=e225]:
+                      - img "Change page icon" [ref=e233]
+                      - generic [ref=e235]: To Do List
+                  - treeitem "Scratchpad" [ref=e237]:
+                    - generic [ref=e238]:
+                      - img "Change page icon" [ref=e246]
+                      - generic [ref=e248]: Scratchpad
+              - button "More" [ref=e250]:
+                - generic [ref=e251]:
+                  - img [ref=e253]
+                  - generic [ref=e255]: More
+        - separator "Resize with left and right arrow keys" [ref=e258]
+    - generic [ref=e259]:
+      - banner [ref=e260]
+      - main [ref=e264]:
+        - group [ref=e267]:
+          - generic [ref=e269]:
+            - generic [ref=e293]:
+              - generic [ref=e294]:
+                - button "Add icon":
+                  - img
+                  - text: Add icon
+                - button "Add cover":
+                  - img
+                  - text: Add cover
+                - generic [ref=e295]:
+                  - button "Add verification":
+                    - img
+                    - text: Add verification
+                - button "Add comment":
+                  - img
+                  - text: Add comment
+              - textbox [ref=e299]:
+                - /placeholder: New page
+            - generic [ref=e301]:
+              - textbox [ref=e307]:
+                - /placeholder: " "
+                - generic [ref=e308]: main
+                - generic [ref=e309]: next
+              - textbox [ref=e314]:
+                - /placeholder: Heading 2
+              - textbox [ref=e320]:
+                - /placeholder: " "
+                - generic [ref=e321]: main
+                - generic [ref=e322]: next
+                - generic [ref=e323]: main
+                - generic [ref=e324]: next
+                - generic [ref=e325]: next
+                - generic [ref=e326]: main
+              - textbox [ref=e332]:
+                - /placeholder: " "
+              - generic [ref=e336]:
+                - generic [ref=e338]: "1."
+                - textbox [ref=e341]:
+                  - /placeholder: List
+                  - generic [ref=e342]: Verified
+                  - generic [ref=e343]: main
+                  - generic [ref=e344]: next
+              - generic [ref=e348]:
+                - generic [ref=e350]: "2."
+                - textbox [ref=e353]:
+                  - /placeholder: List
+                  - generic [ref=e354]: main
+                  - generic [ref=e355]: next
+              - generic [ref=e359]:
+                - generic [ref=e361]: "3."
+                - textbox [ref=e364]:
+                  - /placeholder: List
+              - textbox [ref=e370]:
+                - /placeholder: " "
+                - generic [ref=e371]: next
+                - generic [ref=e372]: main
+                - generic [ref=e373]: main
+              - textbox [ref=e378]:
+                - /placeholder: Heading 2
+              - textbox [ref=e384]:
+                - /placeholder: " "
+                - generic [ref=e385]: next
+                - generic [ref=e386]: main
+              - textbox [ref=e391]:
+                - /placeholder: Heading 2
+              - textbox [ref=e397]:
+                - /placeholder: " "
+                - generic [ref=e398]: main
+              - separator [ref=e401]
+              - textbox [ref=e406]:
+                - /placeholder: Heading 3
+              - textbox [ref=e412]:
+                - /placeholder: " "
+              - textbox [ref=e418]:
+                - /placeholder: " "
+                - generic [ref=e419]: main
+                - generic [ref=e420]: next
+                - generic [ref=e421]: main
+              - figure [ref=e424]:
+                - generic [ref=e426]:
+                  - textbox [ref=e428]:
+                    - /placeholder: " "
+                  - generic:
+                    - generic:
+                      - button "Click diagram to expand in fullscreen"
+              - textbox [ref=e434]:
+                - /placeholder: " "
+                - generic [ref=e435]: next
+                - generic [ref=e436]: main
+                - generic [ref=e437]: main
+              - generic [ref=e447]:
+                - table [ref=e448]:
+                  - rowgroup [ref=e449]:
+                    - row "Advantage Cost" [ref=e450]:
+                      - columnheader "Advantage" [ref=e451]:
+                        - textbox [ref=e453]:
+                          - /placeholder: " "
+                      - columnheader "Cost" [ref=e455]:
+                        - textbox [ref=e457]:
+                          - /placeholder: " "
+                    - row "Commits on next keep original SHAs, verification, and timestamps Merge commit noise on next (one per main push, ~4-8 per month)" [ref=e459]:
+                      - cell "Commits on next keep original SHAs, verification, and timestamps" [ref=e460]:
+                        - textbox [ref=e462]:
+                          - /placeholder: " "
+                          - generic [ref=e463]: next
+                      - cell "Merge commit noise on next (one per main push, ~4-8 per month)" [ref=e465]:
+                        - textbox [ref=e467]:
+                          - /placeholder: " "
+                          - generic [ref=e468]: next
+                          - generic [ref=e469]: main
+                    - row "Promotion to main produces clean, verified individual commits next branch history is less scannable due to merge commits" [ref=e471]:
+                      - cell "Promotion to main produces clean, verified individual commits" [ref=e472]:
+                        - textbox [ref=e474]:
+                          - /placeholder: " "
+                          - generic [ref=e475]: main
+                      - cell "next branch history is less scannable due to merge commits" [ref=e477]:
+                        - textbox [ref=e479]:
+                          - /placeholder: " "
+                          - generic [ref=e480]: next
+                    - row "Contributors see their commits exactly as they authored them Merge commits need version conflict resolution (package.json)" [ref=e482]:
+                      - cell "Contributors see their commits exactly as they authored them" [ref=e483]:
+                        - textbox [ref=e485]:
+                          - /placeholder: " "
+                      - cell "Merge commits need version conflict resolution (package.json)" [ref=e487]:
+                        - textbox [ref=e489]:
+                          - /placeholder: " "
+                    - row "No force-push on next, no broken local checkouts" [ref=e491]:
+                      - cell "No force-push on next, no broken local checkouts" [ref=e492]:
+                        - textbox [ref=e494]:
+                          - /placeholder: " "
+                          - generic [ref=e495]: next
+                      - cell [ref=e497]:
+                        - textbox [ref=e499]:
+                          - /placeholder: " "
+                - generic [ref=e501]:
+                  - generic:
+                    - generic:
+                      - button:
+                        - generic:
+                          - img
+                - generic [ref=e502]:
+                  - generic:
+                    - generic:
+                      - button:
+                        - generic:
+                          - img
+                - generic [ref=e503]:
+                  - generic:
+                    - generic:
+                      - button:
+                        - generic:
+                          - img
+              - separator [ref=e506]
+              - textbox [ref=e511]:
+                - /placeholder: Heading 3
+              - textbox [ref=e517]:
+                - /placeholder: " "
+              - textbox [ref=e523]:
+                - /placeholder: " "
+                - generic [ref=e524]: main
+              - figure [ref=e527]:
+                - generic [ref=e529]:
+                  - textbox [ref=e531]:
+                    - /placeholder: " "
+                  - generic:
+                    - generic:
+                      - button "Click diagram to expand in fullscreen"
+              - textbox [ref=e537]:
+                - /placeholder: " "
+                - generic [ref=e538]: next
+                - generic [ref=e539]: next
+                - generic [ref=e540]: main
+              - generic [ref=e550]:
+                - table [ref=e551]:
+                  - rowgroup [ref=e552]:
+                    - row "Advantage Cost" [ref=e553]:
+                      - columnheader "Advantage" [ref=e554]:
+                        - textbox [ref=e556]:
+                          - /placeholder: " "
+                      - columnheader "Cost" [ref=e558]:
+                        - textbox [ref=e560]:
+                          - /placeholder: " "
+                    - row "Clean linear history on next (no merge commits) Timestamps are rewritten on every rebase" [ref=e562]:
+                      - cell "Clean linear history on next (no merge commits)" [ref=e563]:
+                        - textbox [ref=e565]:
+                          - /placeholder: " "
+                          - generic [ref=e566]: next
+                      - cell "Timestamps are rewritten on every rebase" [ref=e568]:
+                        - textbox [ref=e570]:
+                          - /placeholder: " "
+                    - row "No merge conflict resolution needed for version files Contributors see their commits with different timestamps than when they authored them" [ref=e572]:
+                      - cell "No merge conflict resolution needed for version files" [ref=e573]:
+                        - textbox [ref=e575]:
+                          - /placeholder: " "
+                      - cell "Contributors see their commits with different timestamps than when they authored them" [ref=e577]:
+                        - textbox [ref=e579]:
+                          - /placeholder: " "
+                    - row "Verified badges restored via app signing Force-push on next breaks local checkouts (contributors must git pull --rebase)" [ref=e581]:
+                      - cell "Verified badges restored via app signing" [ref=e582]:
+                        - textbox [ref=e584]:
+                          - /placeholder: " "
+                      - cell "Force-push on next breaks local checkouts (contributors must git pull --rebase)" [ref=e586]:
+                        - textbox [ref=e588]:
+                          - /placeholder: " "
+                          - generic [ref=e589]: next
+                          - generic [ref=e590]: git pull --rebase
+                    - row "\"When was this released?\" question gets wrong answer from commit timestamps" [ref=e592]:
+                      - cell [ref=e593]:
+                        - textbox [ref=e595]:
+                          - /placeholder: " "
+                      - cell "\"When was this released?\" question gets wrong answer from commit timestamps" [ref=e597]:
+                        - textbox [ref=e599]:
+                          - /placeholder: " "
+                - generic [ref=e601]:
+                  - generic:
+                    - generic:
+                      - button:
+                        - generic:
+                          - img
+                - generic [ref=e602]:
+                  - generic:
+                    - generic:
+                      - button:
+                        - generic:
+                          - img
+                - generic [ref=e603]:
+                  - generic:
+                    - generic:
+                      - button:
+                        - generic:
+                          - img
+              - separator [ref=e606]
+              - textbox [ref=e611]:
+                - /placeholder: Heading 3
+              - textbox [ref=e617]:
+                - /placeholder: " "
+                - generic [ref=e618]: next
+              - textbox [ref=e624]:
+                - /placeholder: " "
+                - generic [ref=e625]: next
+                - generic [ref=e626]: main
+              - figure [ref=e629]:
+                - generic [ref=e631]:
+                  - textbox [ref=e633]:
+                    - /placeholder: " "
+                  - generic:
+                    - generic:
+                      - button "Click diagram to expand in fullscreen"
+              - textbox [ref=e639]:
+                - /placeholder: " "
+                - generic [ref=e640]: next
+                - generic [ref=e641]: main
+              - generic [ref=e651]:
+                - table [ref=e652]:
+                  - rowgroup [ref=e653]:
+                    - row "Advantage Cost" [ref=e654]:
+                      - columnheader "Advantage" [ref=e655]:
+                        - textbox [ref=e657]:
+                          - /placeholder: " "
+                      - columnheader "Cost" [ref=e659]:
+                        - textbox [ref=e661]:
+                          - /placeholder: " "
+                    - row "No force-pushes, no timestamp rewriting, no broken verification next can fall behind main if backport labels are forgotten" [ref=e663]:
+                      - cell "No force-pushes, no timestamp rewriting, no broken verification" [ref=e664]:
+                        - textbox [ref=e666]:
+                          - /placeholder: " "
+                      - cell "next can fall behind main if backport labels are forgotten" [ref=e668]:
+                        - textbox [ref=e670]:
+                          - /placeholder: " "
+                          - generic [ref=e671]: next
+                          - generic [ref=e672]: main
+                    - row "Contributors see their commits exactly as authored Every main fix needs a backport next label (manual step)" [ref=e674]:
+                      - cell "Contributors see their commits exactly as authored" [ref=e675]:
+                        - textbox [ref=e677]:
+                          - /placeholder: " "
+                      - cell "Every main fix needs a backport next label (manual step)" [ref=e679]:
+                        - textbox [ref=e681]:
+                          - /placeholder: " "
+                          - generic [ref=e682]: main
+                          - generic [ref=e683]: backport next
+                    - row "No merge commit noise Risk of merge conflicts accumulating if sync is delayed" [ref=e685]:
+                      - cell "No merge commit noise" [ref=e686]:
+                        - textbox [ref=e688]:
+                          - /placeholder: " "
+                      - cell "Risk of merge conflicts accumulating if sync is delayed" [ref=e690]:
+                        - textbox [ref=e692]:
+                          - /placeholder: " "
+                    - row "Simplest mechanism (no sync workflow at all) Pre-promotion sync is a manual, potentially complex merge" [ref=e694]:
+                      - cell "Simplest mechanism (no sync workflow at all)" [ref=e695]:
+                        - textbox [ref=e697]:
+                          - /placeholder: " "
+                      - cell "Pre-promotion sync is a manual, potentially complex merge" [ref=e699]:
+                        - textbox [ref=e701]:
+                          - /placeholder: " "
+                - generic [ref=e703]:
+                  - generic:
+                    - generic:
+                      - button:
+                        - generic:
+                          - img
+                - generic [ref=e704]:
+                  - generic:
+                    - generic:
+                      - button:
+                        - generic:
+                          - img
+                - generic [ref=e705]:
+                  - generic:
+                    - generic:
+                      - button:
+                        - generic:
+                          - img
+              - separator [ref=e708]
+              - textbox [ref=e713]:
+                - /placeholder: Heading 2
+              - generic [ref=e723]:
+                - table [ref=e724]:
+                  - rowgroup [ref=e725]:
+                    - 'row "Dimension A: Merge sync B: Rebase + signing C: No auto sync" [ref=e726]':
+                      - columnheader "Dimension" [ref=e727]:
+                        - textbox [ref=e729]:
+                          - /placeholder: " "
+                      - 'columnheader "A: Merge sync" [ref=e731]':
+                        - textbox [ref=e733]:
+                          - /placeholder: " "
+                      - 'columnheader "B: Rebase + signing" [ref=e735]':
+                        - textbox [ref=e737]:
+                          - /placeholder: " "
+                      - 'columnheader "C: No auto sync" [ref=e739]':
+                        - textbox [ref=e741]:
+                          - /placeholder: " "
+                    - row "Commits verified on next Yes (original) Yes (app-signed) Yes (original)" [ref=e743]:
+                      - cell "Commits verified on next" [ref=e744]:
+                        - textbox [ref=e746]:
+                          - /placeholder: " "
+                          - generic [ref=e747]: next
+                      - cell "Yes (original)" [ref=e749]:
+                        - textbox [ref=e751]:
+                          - /placeholder: " "
+                      - cell "Yes (app-signed)" [ref=e753]:
+                        - textbox [ref=e755]:
+                          - /placeholder: " "
+                      - cell "Yes (original)" [ref=e757]:
+                        - textbox [ref=e759]:
+                          - /placeholder: " "
+                    - row "Commits verified on main after promote Yes (GitHub-signed) Yes (GitHub-signed) Yes (GitHub-signed)" [ref=e761]:
+                      - cell "Commits verified on main after promote" [ref=e762]:
+                        - textbox [ref=e764]:
+                          - /placeholder: " "
+                          - generic [ref=e765]: main
+                      - cell "Yes (GitHub-signed)" [ref=e767]:
+                        - textbox [ref=e769]:
+                          - /placeholder: " "
+                      - cell "Yes (GitHub-signed)" [ref=e771]:
+                        - textbox [ref=e773]:
+                          - /placeholder: " "
+                      - cell "Yes (GitHub-signed)" [ref=e775]:
+                        - textbox [ref=e777]:
+                          - /placeholder: " "
+                    - row "Timestamps accurate on next Yes No (rewritten) Yes" [ref=e779]:
+                      - cell "Timestamps accurate on next" [ref=e780]:
+                        - textbox [ref=e782]:
+                          - /placeholder: " "
+                          - generic [ref=e783]: next
+                      - cell "Yes" [ref=e785]:
+                        - textbox [ref=e787]:
+                          - /placeholder: " "
+                      - cell "No (rewritten)" [ref=e789]:
+                        - textbox [ref=e791]:
+                          - /placeholder: " "
+                      - cell "Yes" [ref=e793]:
+                        - textbox [ref=e795]:
+                          - /placeholder: " "
+                    - row "Merge commit noise on next Yes (~4-8/month) None None" [ref=e797]:
+                      - cell "Merge commit noise on next" [ref=e798]:
+                        - textbox [ref=e800]:
+                          - /placeholder: " "
+                          - generic [ref=e801]: next
+                      - cell "Yes (~4-8/month)" [ref=e803]:
+                        - textbox [ref=e805]:
+                          - /placeholder: " "
+                      - cell "None" [ref=e807]:
+                        - textbox [ref=e809]:
+                          - /placeholder: " "
+                      - cell "None" [ref=e811]:
+                        - textbox [ref=e813]:
+                          - /placeholder: " "
+                    - row "Force-push on next No Yes (every main push) No" [ref=e815]:
+                      - cell "Force-push on next" [ref=e816]:
+                        - textbox [ref=e818]:
+                          - /placeholder: " "
+                          - generic [ref=e819]: next
+                      - cell "No" [ref=e821]:
+                        - textbox [ref=e823]:
+                          - /placeholder: " "
+                      - cell "Yes (every main push)" [ref=e825]:
+                        - textbox [ref=e827]:
+                          - /placeholder: " "
+                          - generic [ref=e828]: main
+                      - cell "No" [ref=e830]:
+                        - textbox [ref=e832]:
+                          - /placeholder: " "
+                    - row "Manual steps None None Backport label per main fix" [ref=e834]:
+                      - cell "Manual steps" [ref=e835]:
+                        - textbox [ref=e837]:
+                          - /placeholder: " "
+                      - cell "None" [ref=e839]:
+                        - textbox [ref=e841]:
+                          - /placeholder: " "
+                      - cell "None" [ref=e843]:
+                        - textbox [ref=e845]:
+                          - /placeholder: " "
+                      - cell "Backport label per main fix" [ref=e847]:
+                        - textbox [ref=e849]:
+                          - /placeholder: " "
+                          - generic [ref=e850]: main
+                    - row "next always superset of main Yes (automatic) Yes (automatic) No (depends on discipline)" [ref=e852]:
+                      - cell "next always superset of main" [ref=e853]:
+                        - textbox [ref=e855]:
+                          - /placeholder: " "
+                          - generic [ref=e856]: next
+                          - generic [ref=e857]: main
+                      - cell "Yes (automatic)" [ref=e859]:
+                        - textbox [ref=e861]:
+                          - /placeholder: " "
+                      - cell "Yes (automatic)" [ref=e863]:
+                        - textbox [ref=e865]:
+                          - /placeholder: " "
+                      - cell "No (depends on discipline)" [ref=e867]:
+                        - textbox [ref=e869]:
+                          - /placeholder: " "
+                    - row "Local checkout stability Stable Breaks on every rebase Stable" [ref=e871]:
+                      - cell "Local checkout stability" [ref=e872]:
+                        - textbox [ref=e874]:
+                          - /placeholder: " "
+                      - cell "Stable" [ref=e876]:
+                        - textbox [ref=e878]:
+                          - /placeholder: " "
+                      - cell "Breaks on every rebase" [ref=e880]:
+                        - textbox [ref=e882]:
+                          - /placeholder: " "
+                      - cell "Stable" [ref=e884]:
+                        - textbox [ref=e886]:
+                          - /placeholder: " "
+                    - row "Contributor experience Commits unchanged Commits rewritten Commits unchanged" [ref=e888]:
+                      - cell "Contributor experience" [ref=e889]:
+                        - textbox [ref=e891]:
+                          - /placeholder: " "
+                      - cell "Commits unchanged" [ref=e893]:
+                        - textbox [ref=e895]:
+                          - /placeholder: " "
+                      - cell "Commits rewritten" [ref=e897]:
+                        - textbox [ref=e899]:
+                          - /placeholder: " "
+                      - cell "Commits unchanged" [ref=e901]:
+                        - textbox [ref=e903]:
+                          - /placeholder: " "
+                - generic [ref=e905]:
+                  - generic:
+                    - generic:
+                      - button:
+                        - generic:
+                          - img
+                - generic [ref=e906]:
+                  - generic:
+                    - generic:
+                      - button:
+                        - generic:
+                          - img
+                - generic [ref=e907]:
+                  - generic:
+                    - generic:
+                      - button:
+                        - generic:
+                          - img
+              - textbox [ref=e912]:
+                - /placeholder: Heading 2
+              - textbox [ref=e918]:
+                - /placeholder: " "
+                - generic [ref=e919]: next
+                - generic [ref=e920]: main
+                - generic [ref=e921]: main
+                - generic [ref=e922]: Verified
+              - textbox [ref=e927]:
+                - /placeholder: Heading 2
+              - textbox [ref=e933]:
+                - /placeholder: " "
+                - generic [ref=e934]: next
+                - generic [ref=e935]: next
+              - textbox [ref=e941]:
+                - /placeholder: " "
+                - generic [ref=e942]: next
+      - region [ref=e944]
+    - button "ai" [ref=e949] [cursor=pointer]:
+      - img "Notion AI face" [ref=e955]
+  - status [ref=e956]
+  - alert [ref=e957]

@@ -1,0 +1,31 @@
+[     252ms] [INFO] Resource Sentinel initialized... @ https://www.notion.so/Forward-Sync-Trade-off-Analysis-338e081b657c81d7ba44d901ab557802:0
+[     312ms] [INFO] 2026-04-04T07:15:08.113Z [info] PageLoader: loserAborted {data: Object} @ https://www.notion.so/_assets/app-23212e09d0c5b93b.js:67
+[     330ms] [INFO] 2026-04-04T07:15:08.130Z [info] FeatureFlagTransactionQueue: preferIndexedDB {team: no-team-specified} @ https://www.notion.so/_assets/app-23212e09d0c5b93b.js:67
+[     379ms] [WARNING] Ignoring inability to install OPFS sqlite3_vfs: Cannot install OPFS: Missing SharedArrayBuffer and/or Atomics. The server must emit the COOP/COEP response headers to enable those. See https://sqlite.org/wasm/doc/trunk/persistence.md#coop-coep @ https://www.notion.so/_assets/wasm-sqlite-worker-74bdbf989f43ad5c.js:0
+[     797ms] [LOG] %c
+	nnnnnnnnnnnnnnnnnnnnnnnnnnnnnn
+	nnnn                         nnnn
+	nnnnnnn                          nnnn
+	nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn
+	nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn
+	nnnnnnnn                           nnn
+	nnnnnnnn    nnnnnnnn     nnnnnnn   nnn
+	nnnnnnnn      nnnnnnn      nnn     nnn
+	nnnnnnnn      nnnnnnnn     nnn     nnn
+	nnnnnnnn      nnnnnnnnnn   nnn     nnn
+	nnnnnnnn      nnn nnnnnnn  nnn     nnn
+	nnnnnnnn      nnn  nnnnnnnnnnn     nnn
+	nnnnnnnn      nnn   nnnnnnnnnn     nnn
+	nnnnnnnn      nnn     nnnnnnnn     nnn
+	nnnnnnnn      nnn      nnnnnnn     nnn
+	nnnnnnnn    nnnnnnnn    nnnnnn     nnn
+	  nnnnnn                           nnn
+		nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn		We're hiring!
+		  nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn		notion.so/careers
+
+	“yeah, I would probably eat a lemon for one hundred dollars” -- Ivan Zhao (2023-07-14)
+				  font-family: monospace @ https://www.notion.so/_assets/mainApp-2ebdc0c35e33eeeb.js:0
+[    1408ms] [WARNING] Amplitude Logger [Warn]: Event not tracked, no destination plugins on the instance @ https://www.notion.so/_assets/transport-support-ba721c6e8ff031b7.js:0
+[    1408ms] [INFO] 2026-04-04T07:15:09.208Z [error] eventTrailApiHelpers: trackFailure {error: Object} @ https://www.notion.so/_assets/app-23212e09d0c5b93b.js:67
+[    2388ms] [INFO] 2026-04-04T07:15:10.188Z [info] ai.completionActions: maybeUpdateAIUsageEligibilityStoreV2Refreshing {data: Object} @ https://www.notion.so/_assets/18763-ac619dd144d51998.js:472
+[   60268ms] [INFO] 2026-04-04T07:16:08.068Z [info] PageLoader: loserAborted {data: Object} @ https://www.notion.so/_assets/18763-ac619dd144d51998.js:472

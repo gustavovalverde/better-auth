@@ -1,0 +1,299 @@
+- generic [ref=e4]:
+  - generic [ref=e6]:
+    - link "Skip to content" [ref=e8] [cursor=pointer]:
+      - /url: "#main"
+      - generic [ref=e9]:
+        - text: Skip to content
+        - img [ref=e10]
+    - navigation "Sidebar":
+      - generic [ref=e88]:
+        - generic [ref=e90]:
+          - button "Better Auth Close sidebar New page More options" [ref=e95] [cursor=pointer]:
+            - generic [ref=e106]: Better Auth
+            - generic [ref=e108]:
+              - button "Close sidebar" [ref=e110]:
+                - img [ref=e111]
+              - generic [ref=e114]:
+                - button "New page" [ref=e116]:
+                  - img [ref=e117]
+                - button "More options" [ref=e122]:
+                  - img [ref=e123]
+          - generic [ref=e125] [cursor=pointer]:
+            - button "Search" [ref=e127]:
+              - generic [ref=e128]:
+                - img [ref=e130]
+                - generic [ref=e132]: Search
+            - link "Home" [ref=e134]:
+              - /url: /cf8f28c30b2143af933d1c692a57af3f?pvs=16
+              - generic [ref=e135]:
+                - img [ref=e137]
+                - generic [ref=e139]: Home
+            - link "Meetings" [ref=e141]:
+              - /url: /meet
+              - generic [ref=e142]:
+                - img [ref=e144]
+                - generic [ref=e149]: Meetings
+            - link "Notion AI" [ref=e152]:
+              - /url: /ai
+              - generic [ref=e153]:
+                - img [ref=e156]
+                - generic [ref=e160]: Notion AI
+            - button "Inbox" [ref=e162]:
+              - generic [ref=e163]:
+                - img [ref=e165]
+                - generic [ref=e167]: Inbox
+            - button "Library" [ref=e172]:
+              - generic [ref=e173]:
+                - img [ref=e176]
+                - generic [ref=e178]: Library
+          - generic [ref=e183]:
+            - generic [ref=e184]:
+              - generic [ref=e187] [cursor=pointer]:
+                - button "Recents" [expanded] [ref=e188]:
+                  - generic [ref=e189]: Recents
+                  - img [ref=e190]
+                - tree "Recents" [ref=e193]:
+                  - 'treeitem "Forward Sync: Trade-off Analysis" [ref=e197]':
+                    - generic [ref=e198]:
+                      - img "Change page icon" [ref=e204]:
+                        - img [ref=e205]
+                      - generic [ref=e209]: "Forward Sync: Trade-off Analysis"
+              - generic [ref=e211] [cursor=pointer]:
+                - button "Agents Beta" [expanded] [ref=e212]:
+                  - generic [ref=e213]:
+                    - text: Agents
+                    - link "Beta" [ref=e217]:
+                      - /url: https://www.notion.com/help/custom-agent
+                      - generic [ref=e218]: Beta
+                  - img [ref=e219]
+                - list "Agents Beta" [ref=e223]:
+                  - button "New agent" [ref=e224]:
+                    - generic [ref=e225]:
+                      - img [ref=e227]
+                      - generic [ref=e229]: New agent
+              - generic [ref=e232] [cursor=pointer]:
+                - button "Private" [expanded] [ref=e233]:
+                  - generic [ref=e234]: Private
+                  - img [ref=e235]
+                - tree "Private" [ref=e238]:
+                  - generic [ref=e240]:
+                    - treeitem "Scratchpad" [ref=e242]:
+                      - generic [ref=e243]:
+                        - img "Change page icon" [ref=e251]
+                        - generic [ref=e253]: Scratchpad
+                    - treeitem "1:1 notes" [ref=e255]:
+                      - generic [ref=e256]:
+                        - img "Change page icon" [ref=e264]
+                        - generic [ref=e266]: 1:1 notes
+                    - treeitem "Getting Started" [ref=e268]:
+                      - generic [ref=e269]:
+                        - img "Change page icon" [ref=e277]: 👋
+                        - generic [ref=e279]: Getting Started
+                    - treeitem "To Do List" [ref=e281]:
+                      - generic [ref=e282]:
+                        - img "Change page icon" [ref=e290]
+                        - generic [ref=e292]: To Do List
+                    - treeitem "Scratchpad" [ref=e294]:
+                      - generic [ref=e295]:
+                        - img "Change page icon" [ref=e303]
+                        - generic [ref=e305]: Scratchpad
+                - button "More" [ref=e307]:
+                  - generic [ref=e308]:
+                    - img [ref=e310]
+                    - generic [ref=e312]: More
+              - generic [ref=e314] [cursor=pointer]:
+                - button "Teamspaces" [expanded] [ref=e315]:
+                  - generic [ref=e316]: Teamspaces
+                  - img [ref=e317]
+                - generic [ref=e320]:
+                  - generic [ref=e322]:
+                    - button "Open Source" [expanded] [ref=e323]:
+                      - generic [ref=e327]:
+                        - generic [ref=e337]: Open Source
+                        - generic [ref=e338]:
+                          - button "Teamspace settings and members..." [ref=e341]:
+                            - img [ref=e342]
+                          - button "Add to Open Source" [ref=e345]:
+                            - img [ref=e347]
+                    - tree "Open Source" [ref=e349]:
+                      - generic [ref=e351]:
+                        - treeitem "Open Source Workflow" [expanded] [ref=e353]:
+                          - generic [ref=e354]:
+                            - img "Change page icon" [ref=e362]: 🏷️
+                            - generic [ref=e364]: Open Source Workflow
+                          - group "Open Source Workflow" [ref=e365]:
+                            - generic [ref=e367]:
+                              - treeitem "Archive" [ref=e369]:
+                                - generic [ref=e370]:
+                                  - img "Change page icon" [ref=e378]
+                                  - generic [ref=e380]: Archive
+                              - treeitem "Label System" [ref=e382]:
+                                - generic [ref=e383]:
+                                  - img "Change page icon" [ref=e389]:
+                                    - img [ref=e390]
+                                  - generic [ref=e394]: Label System
+                              - treeitem "Architecture Layers & Priority System" [ref=e396]:
+                                - generic [ref=e397]:
+                                  - img "Change page icon" [ref=e403]:
+                                    - img [ref=e404]
+                                  - generic [ref=e408]: Architecture Layers & Priority System
+                              - treeitem "CONTRIBUTING.md" [ref=e410]:
+                                - generic [ref=e411]:
+                                  - img "Change page icon" [ref=e417]:
+                                    - img [ref=e418]
+                                  - generic [ref=e422]: CONTRIBUTING.md
+                              - treeitem "Release Process" [ref=e424]:
+                                - generic [ref=e425]:
+                                  - img "Change page icon" [ref=e431]:
+                                    - img [ref=e432]
+                                  - generic [ref=e436]: Release Process
+                              - 'treeitem "Forward Sync: Trade-off Analysis" [ref=e438]':
+                                - generic [ref=e439]:
+                                  - img "Change page icon" [ref=e445]:
+                                    - img [ref=e446]
+                                  - generic [ref=e450]: "Forward Sync: Trade-off Analysis"
+                        - treeitem "Release Notes" [ref=e452]:
+                          - generic [ref=e453]:
+                            - img "Change page icon" [ref=e461]
+                            - generic [ref=e463]: Release Notes
+                        - treeitem "1.5 Feature Brainstorm Idea" [ref=e465]:
+                          - generic [ref=e466]:
+                            - img "Change page icon" [ref=e474]
+                            - generic [ref=e476]: 1.5 Feature Brainstorm Idea
+                        - treeitem "Agent Auth Release" [ref=e478]:
+                          - generic [ref=e479]:
+                            - img "Change page icon" [ref=e485]:
+                              - img [ref=e486]
+                            - generic [ref=e490]: Agent Auth Release
+                        - treeitem "Roadmaps" [ref=e492]:
+                          - generic [ref=e493]:
+                            - img "Change page icon" [ref=e501]
+                            - generic [ref=e503]: Roadmaps
+                        - treeitem "Release Flow" [active] [ref=e505]:
+                          - generic [ref=e506]:
+                            - generic [ref=e508]:
+                              - button "Open" [ref=e1572]:
+                                - img [ref=e1573]
+                              - img "Change page icon" [ref=e512]:
+                                - img [ref=e513]
+                            - generic [ref=e517]: Release Flow
+                            - generic [ref=e1577]:
+                              - button "Delete, duplicate, and more…" [ref=e1579]:
+                                - img [ref=e1580]
+                              - button "Add a page inside" [ref=e1583]:
+                                - img [ref=e1584]
+                  - generic [ref=e519]:
+                    - button "Company" [expanded] [ref=e520]:
+                      - generic [ref=e524]:
+                        - generic [ref=e534]: Company
+                        - generic [ref=e535]:
+                          - button "Teamspace settings and members..." [ref=e538]:
+                            - img [ref=e539]
+                          - button "Add to Company" [ref=e542]:
+                            - img [ref=e544]
+                    - tree "Company" [ref=e546]:
+                      - generic [ref=e548]:
+                        - treeitem "General" [ref=e550]:
+                          - generic [ref=e551]:
+                            - img "Change page icon" [ref=e559]
+                            - generic [ref=e561]: General
+                        - treeitem "GTM" [ref=e563]:
+                          - generic [ref=e564]:
+                            - img "Change page icon" [ref=e570]:
+                              - img [ref=e571]
+                            - generic [ref=e575]: GTM
+                    - button "Add new" [ref=e576]:
+                      - generic [ref=e577]:
+                        - img [ref=e580]
+                        - generic [ref=e582]: Add new
+                - button "More" [ref=e584]:
+                  - generic [ref=e585]:
+                    - img [ref=e587]
+                    - generic [ref=e589]: More
+              - generic [ref=e591] [cursor=pointer]:
+                - button "Notion apps" [expanded] [ref=e592]:
+                  - generic [ref=e593]: Notion apps
+                  - img [ref=e594]
+                - generic [ref=e598]:
+                  - button "Notion Mail" [ref=e602]:
+                    - generic [ref=e603]:
+                      - img [ref=e605]
+                      - generic [ref=e607]: Notion Mail
+                  - button "Notion Calendar" [ref=e611]:
+                    - generic [ref=e612]:
+                      - img [ref=e614]
+                      - generic [ref=e616]: Notion Calendar
+                  - button "Notion Desktop" [ref=e620]:
+                    - generic [ref=e621]:
+                      - img [ref=e623]
+                      - generic [ref=e625]: Notion Desktop
+            - generic [ref=e626]:
+              - button "Settings" [ref=e628] [cursor=pointer]:
+                - generic [ref=e629]:
+                  - img [ref=e631]
+                  - generic [ref=e634]: Settings
+              - button "Resources" [ref=e636] [cursor=pointer]:
+                - generic [ref=e637]:
+                  - img [ref=e639]
+                  - generic [ref=e641]: Resources
+              - button "Trash" [ref=e645] [cursor=pointer]:
+                - generic [ref=e646]:
+                  - img [ref=e648]
+                  - generic [ref=e651]: Trash
+          - generic [ref=e657]:
+            - button "What’s new, help, contact, more…" [ref=e659] [cursor=pointer]:
+              - img [ref=e660]
+            - generic:
+              - img "New"
+        - separator "Resize with left and right arrow keys" [ref=e665]
+    - generic [ref=e81]:
+      - banner [ref=e82]:
+        - generic [ref=e667]:
+          - generic [ref=e668]:
+            - button "Open Source" [ref=e670] [cursor=pointer]:
+              - generic [ref=e675]: Open Source
+            - img [ref=e677]
+            - button "Release Flow" [ref=e1586] [cursor=pointer]:
+              - generic [ref=e690]: Release Flow
+          - generic [ref=e692]:
+            - button "Share" [ref=e695] [cursor=pointer]:
+              - img [ref=e696]
+              - text: Share
+              - img [ref=e699]
+            - button "Favorite" [ref=e702] [cursor=pointer]:
+              - img [ref=e703]
+            - button "Actions" [ref=e707] [cursor=pointer]:
+              - img [ref=e708]
+      - main [ref=e84]:
+        - group [ref=e1589]:
+          - generic [ref=e1591]:
+            - generic [ref=e1594]:
+              - generic [ref=e1595]:
+                - button "Add icon":
+                  - img
+                  - text: Add icon
+                - button "Add cover":
+                  - img
+                  - text: Add cover
+                - generic [ref=e1596]:
+                  - button "Add verification":
+                    - img
+                    - text: Add verification
+                - button "Add comment":
+                  - img
+                  - text: Add comment
+              - textbox [ref=e1600]:
+                - /placeholder: New page
+            - generic [ref=e1602]:
+              - link "Archived" [ref=e1606] [cursor=pointer]:
+                - /url: /Archived-32fe081b657c8007ab44f1e3f2049648?pvs=25
+                - generic [ref=e1609]:
+                  - button [ref=e1612]
+                  - generic [ref=e1616]: Archived
+              - textbox [ref=e1622]:
+                - /placeholder: " "
+      - region [ref=e1558]
+    - button "ai" [ref=e1563] [cursor=pointer]:
+      - img "Notion AI face" [ref=e1569]
+  - status [ref=e86]
+  - alert [ref=e87]
