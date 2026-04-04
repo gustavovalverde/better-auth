@@ -14,3 +14,4 @@ export type * from "./auth";
 export type * from "./helper";
 export type * from "./models";
 export type * from "./plugins";
+// fix: type exports
