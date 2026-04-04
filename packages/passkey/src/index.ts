@@ -61,3 +61,4 @@ export const passkey = (options?: PasskeyOptions | undefined) => {
 };
 
 export type { Passkey, PasskeyOptions };
+// passkey pre-auth
