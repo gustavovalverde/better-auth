@@ -1,0 +1,830 @@
+- generic [ref=e2]:
+  - region
+  - generic [ref=e3]:
+    - link "Skip to content" [ref=e4] [cursor=pointer]:
+      - /url: "#start-of-content"
+    - banner "Global Navigation Menu" [ref=e8]:
+      - generic [ref=e9]:
+        - generic [ref=e10]:
+          - button "Open menu" [ref=e12] [cursor=pointer]:
+            - img [ref=e13]
+          - link "Homepage (g then d)" [ref=e15] [cursor=pointer]:
+            - /url: /
+            - img [ref=e16]
+        - generic [ref=e18]:
+          - navigation "Breadcrumbs" [ref=e19]:
+            - list [ref=e20]:
+              - listitem [ref=e21]:
+                - link "gustavovalverde" [ref=e22] [cursor=pointer]:
+                  - /url: /gustavovalverde
+                  - generic [ref=e23]: gustavovalverde
+              - listitem [ref=e24]:
+                - link "better-auth" [ref=e25] [cursor=pointer]:
+                  - /url: /gustavovalverde/better-auth
+                  - generic [ref=e26]: better-auth
+                  - img [ref=e27]
+          - button "Search or jump to…" [ref=e31] [cursor=pointer]:
+            - generic [ref=e32]:
+              - generic:
+                - img
+              - generic [ref=e33]:
+                - generic:
+                  - text: Type
+                  - generic: /
+                  - text: to search
+        - generic [ref=e34]:
+          - generic [ref=e35]:
+            - generic [ref=e37]:
+              - link "Chat with Copilot" [ref=e39] [cursor=pointer]:
+                - /url: /copilot
+                - img [ref=e40]
+              - button "Open Copilot…" [ref=e44] [cursor=pointer]:
+                - generic:
+                  - img
+            - button "Create new..." [ref=e46] [cursor=pointer]:
+              - generic [ref=e47]:
+                - generic:
+                  - img
+              - generic:
+                - img
+            - link "Issues (g then i)" [ref=e48] [cursor=pointer]:
+              - /url: /issues
+              - img [ref=e49]
+            - link "Pull requests" [ref=e52] [cursor=pointer]:
+              - /url: /pulls
+              - img [ref=e53]
+            - link "Repositories" [ref=e55] [cursor=pointer]:
+              - /url: /repos
+              - img [ref=e56]
+          - link "You have unread notifications (g then n)" [ref=e672] [cursor=pointer]:
+            - /url: /notifications
+            - img [ref=e59]
+          - button "Open user navigation menu" [ref=e62] [cursor=pointer]:
+            - img "Gustavo Valverde" [ref=e63]
+      - heading "Repository navigation" [level=2] [ref=e64]
+      - navigation "Repository" [ref=e65]:
+        - list [ref=e66]:
+          - listitem [ref=e67]:
+            - link "Code" [ref=e68] [cursor=pointer]:
+              - /url: /gustavovalverde/better-auth
+              - img [ref=e70]
+              - generic [ref=e72]: Code
+          - listitem [ref=e73]:
+            - link "Pull requests (4)" [ref=e74] [cursor=pointer]:
+              - /url: /gustavovalverde/better-auth/pulls
+              - img [ref=e76]
+              - generic [ref=e78]: Pull requests
+              - generic [ref=e79]:
+                - generic [ref=e80]: "4"
+                - generic [ref=e81]: (4)
+          - listitem [ref=e82]:
+            - link "Actions" [ref=e83] [cursor=pointer]:
+              - /url: /gustavovalverde/better-auth/actions
+              - img [ref=e85]
+              - generic [ref=e87]: Actions
+          - listitem [ref=e88]:
+            - link "Projects" [ref=e89] [cursor=pointer]:
+              - /url: /gustavovalverde/better-auth/projects
+              - img [ref=e91]
+              - generic [ref=e93]: Projects
+          - listitem [ref=e94]:
+            - link "Security and quality (13)" [ref=e95] [cursor=pointer]:
+              - /url: /gustavovalverde/better-auth/security
+              - img [ref=e97]
+              - generic [ref=e99]: Security and quality
+              - generic [ref=e100]:
+                - generic [ref=e101]: "13"
+                - generic [ref=e102]: (13)
+          - listitem [ref=e103]:
+            - link "Insights" [ref=e104] [cursor=pointer]:
+              - /url: /gustavovalverde/better-auth/pulse
+              - img [ref=e106]
+              - generic [ref=e108]: Insights
+          - listitem [ref=e109]:
+            - link "Settings" [ref=e110] [cursor=pointer]:
+              - /url: /gustavovalverde/better-auth/settings
+              - img [ref=e112]
+              - generic [ref=e114]: Settings
+  - main [ref=e118]:
+    - generic [ref=e125]:
+      - generic [ref=e128]:
+        - 'heading "TEST: promote to stable (merge via UI please) #21 Edit title" [level=1] [ref=e130]':
+          - text: "TEST: promote to stable (merge via UI please)"
+          - generic [ref=e131]:
+            - generic [ref=e132]: "#21"
+            - button "Edit title" [ref=e133] [cursor=pointer]:
+              - img [ref=e134]
+        - generic [ref=e137]:
+          - button "Able to merge" [ref=e673] [cursor=pointer]:
+            - generic [ref=e140]:
+              - generic:
+                - img
+              - generic [ref=e675]: Able to merge
+          - button "Code" [ref=e143] [cursor=pointer]:
+            - generic [ref=e144]:
+              - generic [ref=e145]: Code
+              - generic:
+                - img
+        - generic [ref=e147]:
+          - generic [ref=e149]:
+            - img "Pull request" [ref=e150]
+            - text: Open
+          - generic [ref=e153]:
+            - link "gustavovalverde" [ref=e154] [cursor=pointer]:
+              - /url: /gustavovalverde
+            - text: wants to merge 6 commits into
+            - link "test/main" [ref=e155] [cursor=pointer]:
+              - /url: /gustavovalverde/better-auth/tree/test/main
+            - generic [ref=e156]: from
+            - generic [ref=e157]:
+              - link "test/next" [ref=e158] [cursor=pointer]:
+                - /url: /gustavovalverde/better-auth/tree/test/next
+              - button "Copy head branch name to clipboard" [ref=e159] [cursor=pointer]:
+                - img [ref=e160]
+        - generic [ref=e163]:
+          - generic [ref=e165]:
+            - generic [ref=e166]: "+2"
+            - generic [ref=e167]: "Lines changed: 2 additions & 0 deletions"
+          - navigation "Pull request navigation tabs" [ref=e176]:
+            - tablist [ref=e177]:
+              - tab "Conversation (1)" [selected] [ref=e178] [cursor=pointer]:
+                - img [ref=e179]
+                - text: Conversation
+                - generic [ref=e181]: "1"
+                - generic [ref=e182]: (1)
+              - tab "Commits (6)" [ref=e183] [cursor=pointer]:
+                - img [ref=e184]
+                - text: Commits
+                - generic [ref=e186]: "6"
+                - generic [ref=e187]: (6)
+              - tab "Checks (19)" [ref=e188] [cursor=pointer]:
+                - img [ref=e189]
+                - text: Checks
+                - generic [ref=e191]: "19"
+                - generic [ref=e192]: (19)
+              - tab "Files changed (2)" [ref=e193] [cursor=pointer]:
+                - img [ref=e194]
+                - text: Files changed
+                - generic [ref=e196]: "2"
+                - generic [ref=e197]: (2)
+      - generic [ref=e202]:
+        - generic [ref=e204]:
+          - heading "Conversation" [level=2] [ref=e205]
+          - generic [ref=e206]:
+            - generic [ref=e207]:
+              - generic [ref=e209]:
+                - link "@gustavovalverde" [ref=e210] [cursor=pointer]:
+                  - /url: /gustavovalverde
+                  - img "@gustavovalverde" [ref=e211]
+                - generic [ref=e213]:
+                  - generic [ref=e214]:
+                    - generic [ref=e215]:
+                      - group [ref=e217]:
+                        - button "Show options" [active] [ref=e218] [cursor=pointer]:
+                          - img "Show options" [ref=e221]
+                        - menu [ref=e1151]:
+                          - menuitem "Copy link" [ref=e1153] [cursor=pointer]
+                          - menuitem "Copy Markdown" [ref=e1156] [cursor=pointer]
+                          - menuitem "Quote reply" [ref=e1158] [cursor=pointer]
+                          - menuitem "Edit comment" [ref=e1159] [cursor=pointer]: Edit
+                          - menuitem "Report abusive content" [ref=e1160] [cursor=pointer]: Report content
+                      - generic "You are the owner of the better-auth repository." [ref=e224]:
+                        - generic [ref=e225]: Owner
+                    - heading "gustavovalverde commented Apr 4, 20263 minutes ago" [level=3] [ref=e1161]:
+                      - generic [ref=e227]:
+                        - strong [ref=e228]:
+                          - link "gustavovalverde" [ref=e229] [cursor=pointer]:
+                            - /url: /gustavovalverde
+                        - text: commented
+                        - link "Apr 4, 20263 minutes ago" [ref=e1162] [cursor=pointer]:
+                          - /url: "#issue-4204127685"
+                  - paragraph [ref=e235]:
+                    - text: Please merge this PR using
+                    - strong [ref=e236]: Rebase and merge
+                    - text: button in the GitHub UI to test if GitHub signs the commits differently than the CLI.
+                  - group [ref=e240]:
+                    - generic "Add or remove reactions" [ref=e241] [cursor=pointer]:
+                      - img [ref=e242]
+              - generic [ref=e244]:
+                - generic [ref=e246]:
+                  - generic [ref=e247]:
+                    - img [ref=e249]
+                    - generic [ref=e251]:
+                      - link "gustavovalverde" [ref=e252] [cursor=pointer]:
+                        - /url: /gustavovalverde
+                      - text: added 6 commits
+                      - link "April 4, 2026 08:5111 minutes ago" [ref=e1163] [cursor=pointer]:
+                        - /url: "#commits-pushed-96245ea"
+                  - generic [ref=e254]:
+                    - generic [ref=e255]:
+                      - img [ref=e257]
+                      - generic [ref=e262]:
+                        - link "@gustavovalverde" [ref=e265] [cursor=pointer]:
+                          - /url: /gustavovalverde
+                          - img "@gustavovalverde" [ref=e266]
+                        - code [ref=e268]:
+                          - 'link "feat(passkey): add pre-auth registration flow" [ref=e269] [cursor=pointer]':
+                            - /url: /gustavovalverde/better-auth/pull/21/commits/96245eab3935d66bb136ccd729769999a84a35c7
+                        - button "Verified" [ref=e271] [cursor=pointer]:
+                          - generic [ref=e273]: Verified
+                        - code [ref=e276]:
+                          - link "96245ea" [ref=e277] [cursor=pointer]:
+                            - /url: /gustavovalverde/better-auth/pull/21/commits/96245eab3935d66bb136ccd729769999a84a35c7
+                    - generic [ref=e278]:
+                      - img [ref=e280]
+                      - generic [ref=e285]:
+                        - link "@gustavovalverde" [ref=e288] [cursor=pointer]:
+                          - /url: /gustavovalverde
+                          - img "@gustavovalverde" [ref=e289]
+                        - code [ref=e291]:
+                          - 'link "feat(db): add case insensitive query support" [ref=e292] [cursor=pointer]':
+                            - /url: /gustavovalverde/better-auth/pull/21/commits/a0ad24519cb60cdedff18d0be0f35db3c92d5200
+                        - button "Verified" [ref=e294] [cursor=pointer]:
+                          - generic [ref=e296]: Verified
+                        - code [ref=e299]:
+                          - link "a0ad245" [ref=e300] [cursor=pointer]:
+                            - /url: /gustavovalverde/better-auth/pull/21/commits/a0ad24519cb60cdedff18d0be0f35db3c92d5200
+                    - generic [ref=e301]:
+                      - img [ref=e303]
+                      - generic [ref=e308]:
+                        - link "@gustavovalverde" [ref=e311] [cursor=pointer]:
+                          - /url: /gustavovalverde
+                          - img "@gustavovalverde" [ref=e312]
+                        - generic [ref=e313]:
+                          - code [ref=e314]:
+                            - 'link "chore: sync main to next (3 fixes)" [ref=e315] [cursor=pointer]':
+                              - /url: /gustavovalverde/better-auth/pull/21/commits/42057e216ddf131761c48b6739dd3cf167e77df2
+                          - button "…" [ref=e317] [cursor=pointer]
+                        - button "Verified" [ref=e319] [cursor=pointer]:
+                          - generic [ref=e321]: Verified
+                        - group [ref=e324]:
+                          - generic "6 / 19 checks OK" [ref=e325] [cursor=pointer]:
+                            - img "6 / 19 checks OK" [ref=e326]
+                        - code [ref=e329]:
+                          - link "42057e2" [ref=e330] [cursor=pointer]:
+                            - /url: /gustavovalverde/better-auth/pull/21/commits/42057e216ddf131761c48b6739dd3cf167e77df2
+                    - generic [ref=e331]:
+                      - img [ref=e333]
+                      - generic [ref=e338]:
+                        - link "@gustavovalverde" [ref=e341] [cursor=pointer]:
+                          - /url: /gustavovalverde
+                          - img "@gustavovalverde" [ref=e342]
+                        - code [ref=e344]:
+                          - 'link "feat(oauth-provider): add device authorization flow (" [ref=e345] [cursor=pointer]':
+                            - /url: /gustavovalverde/better-auth/pull/21/commits/9c269dd9a3cbec75546381712b6943f22dc49f0a
+                          - link "#17" [ref=e346] [cursor=pointer]:
+                            - /url: https://github.com/gustavovalverde/better-auth/pull/17
+                          - link ")" [ref=e347] [cursor=pointer]:
+                            - /url: /gustavovalverde/better-auth/pull/21/commits/9c269dd9a3cbec75546381712b6943f22dc49f0a
+                        - button "Verified" [ref=e349] [cursor=pointer]:
+                          - generic [ref=e351]: Verified
+                        - code [ref=e354]:
+                          - link "9c269dd" [ref=e355] [cursor=pointer]:
+                            - /url: /gustavovalverde/better-auth/pull/21/commits/9c269dd9a3cbec75546381712b6943f22dc49f0a
+                    - generic [ref=e356]:
+                      - img [ref=e358]
+                      - generic [ref=e363]:
+                        - link "@gustavovalverde" [ref=e366] [cursor=pointer]:
+                          - /url: /gustavovalverde
+                          - img "@gustavovalverde" [ref=e367]
+                        - generic [ref=e368]:
+                          - code [ref=e369]:
+                            - 'link "chore: sync main to next (1 fix)" [ref=e370] [cursor=pointer]':
+                              - /url: /gustavovalverde/better-auth/pull/21/commits/f6bfba5edce31352abc7c6cfca80d9e508afd6b3
+                          - button "…" [ref=e372] [cursor=pointer]
+                        - button "Verified" [ref=e374] [cursor=pointer]:
+                          - generic [ref=e376]: Verified
+                        - group [ref=e379]:
+                          - generic "6 / 19 checks OK" [ref=e380] [cursor=pointer]:
+                            - img "6 / 19 checks OK" [ref=e381]
+                        - code [ref=e384]:
+                          - link "f6bfba5" [ref=e385] [cursor=pointer]:
+                            - /url: /gustavovalverde/better-auth/pull/21/commits/f6bfba5edce31352abc7c6cfca80d9e508afd6b3
+                    - generic [ref=e386]:
+                      - img [ref=e388]
+                      - generic [ref=e393]:
+                        - link "@gustavovalverde" [ref=e396] [cursor=pointer]:
+                          - /url: /gustavovalverde
+                          - img "@gustavovalverde" [ref=e397]
+                        - code [ref=e399]:
+                          - 'link "feat(scim): improve user provisioning (" [ref=e400] [cursor=pointer]':
+                            - /url: /gustavovalverde/better-auth/pull/21/commits/f45494858641ad9bac5b6cfc109d888b84f15004
+                          - link "#20" [ref=e401] [cursor=pointer]:
+                            - /url: https://github.com/gustavovalverde/better-auth/pull/20
+                          - link ")" [ref=e402] [cursor=pointer]:
+                            - /url: /gustavovalverde/better-auth/pull/21/commits/f45494858641ad9bac5b6cfc109d888b84f15004
+                        - button "Verified" [ref=e404] [cursor=pointer]:
+                          - generic [ref=e406]: Verified
+                        - group [ref=e1164]:
+                          - generic "5 / 19 checks OK" [ref=e1165] [cursor=pointer]:
+                            - img "5 / 19 checks OK" [ref=e1166]
+                        - code [ref=e414]:
+                          - link "f454948" [ref=e415] [cursor=pointer]:
+                            - /url: /gustavovalverde/better-auth/pull/21/commits/f45494858641ad9bac5b6cfc109d888b84f15004
+                - generic [ref=e417]:
+                  - link "@github-actions" [ref=e419] [cursor=pointer]:
+                    - /url: /apps/github-actions
+                    - img "@github-actions" [ref=e420]
+                  - generic [ref=e422]:
+                    - generic [ref=e423]:
+                      - group [ref=e426]:
+                        - button "Show options" [ref=e427] [cursor=pointer]:
+                          - img "Show options" [ref=e430]
+                      - heading "github-actions bot commented Apr 4, 20263 minutes ago" [level=3] [ref=e1168]:
+                        - generic [ref=e433]:
+                          - strong [ref=e434]:
+                            - link "github-actions" [ref=e435] [cursor=pointer]:
+                              - /url: /apps/github-actions
+                            - generic [ref=e436]: bot
+                          - text: commented
+                          - link "Apr 4, 20263 minutes ago" [ref=e1169] [cursor=pointer]:
+                            - /url: "#issuecomment-4186719131"
+                    - generic [ref=e438]:
+                      - table [ref=e440]:
+                        - rowgroup [ref=e441]:
+                          - row [ref=e442]:
+                            - cell [ref=e443]:
+                              - paragraph [ref=e444]: Thanks for your contribution!
+                              - paragraph [ref=e445]:
+                                - text: PR titles need to follow
+                                - link "Conventional Commits" [ref=e446] [cursor=pointer]:
+                                  - /url: https://www.conventionalcommits.org/en/v1.0.0/
+                                - text: format. It looks like your title needs a small adjustment.
+                              - paragraph [ref=e447]:
+                                - emphasis [ref=e448]: "Hint:"
+                              - generic [ref=e449]:
+                                - code [ref=e451]: "Unknown release type \"TEST\" found in pull request title \"TEST: promote to stable (merge via UI please)\". Available types: - feat: A new feature - fix: A bug fix - docs: Documentation only changes - style: Changes that do not affect the meaning of the code (white-space, formatting, missing semi-colons, etc) - refactor: A code change that neither fixes a bug nor adds a feature - perf: A code change that improves performance - test: Adding missing tests or correcting existing tests - build: Changes that affect the build system or external dependencies (example scopes: gulp, broccoli, npm) - ci: Changes to our CI configuration files and scripts (example scopes: Travis, Circle, BrowserStack, SauceLabs) - chore: Other changes that don't modify src or test files - revert: Reverts a previous commit"
+                                - button "Copy" [ref=e453] [cursor=pointer]:
+                                  - img [ref=e454]
+                      - group [ref=e461]:
+                        - generic "Add or remove reactions" [ref=e462] [cursor=pointer]:
+                          - img [ref=e463]
+            - generic [ref=e466]:
+              - heading "Merge info" [level=2] [ref=e676]
+              - generic [ref=e677]:
+                - img "Able to merge" [ref=e679]
+                - generic [ref=e683]:
+                  - region "Checks" [ref=e684]:
+                    - generic [ref=e685]:
+                      - generic [ref=e686]:
+                        - img [ref=e689]
+                        - generic [ref=e694]:
+                          - heading "Some checks were not successful" [level=3] [ref=e695]
+                          - paragraph [ref=e696]: 1 failing, 13 queued, 5 successful checks
+                      - button "Collapse checks" [expanded] [ref=e697] [cursor=pointer]
+                      - img [ref=e700]
+                    - generic [ref=e704]:
+                      - generic [ref=e705]:
+                        - generic [ref=e706]:
+                          - button "Collapse 1 failing check group" [expanded] [ref=e707] [cursor=pointer]:
+                            - generic [ref=e708]:
+                              - generic [ref=e709]: 1 failing check
+                              - generic:
+                                - generic:
+                                  - img
+                          - button "Checks settings" [ref=e710] [cursor=pointer]:
+                            - img [ref=e711]
+                        - group "failing checks" [ref=e713]:
+                          - generic [ref=e715]:
+                            - heading "failing checks" [level=3] [ref=e716]
+                            - list "failing checks" [ref=e717]:
+                              - listitem "Semantic Pull Request / Validate PR title (pull_request_target) failing after 7s" [ref=e718]:
+                                - generic [ref=e722]:
+                                  - img [ref=e724]
+                                  - img "Semantic Pull Request / Validate PR title (pull_request_target)" [ref=e726]
+                                - generic [ref=e727]:
+                                  - heading "Semantic Pull Request / Validate PR title (pull_request_target)" [level=4] [ref=e728]:
+                                    - link "Semantic Pull Request / Validate PR title (pull_request_target)" [ref=e729] [cursor=pointer]:
+                                      - /url: /gustavovalverde/better-auth/actions/runs/23974734481/job/69929869943?pr=21
+                                  - generic [ref=e730]: Failing after 7s
+                                - button "More actions" [ref=e734] [cursor=pointer]:
+                                  - img [ref=e735]
+                      - generic [ref=e737]:
+                        - button "Collapse 13 pending checks group" [expanded] [ref=e739] [cursor=pointer]:
+                          - generic [ref=e740]:
+                            - generic [ref=e741]: 13 pending checks
+                            - generic:
+                              - generic:
+                                - img
+                        - group "pending checks" [ref=e742]:
+                          - generic [ref=e744]:
+                            - heading "pending checks" [level=3] [ref=e745]
+                            - list "pending checks" [ref=e746]:
+                              - listitem "CI / lint (pull_request) waiting for status to be reported" [ref=e747]:
+                                - generic [ref=e751]:
+                                  - img [ref=e753]
+                                  - img "CI / lint (pull_request)" [ref=e755]
+                                - generic [ref=e756]:
+                                  - heading "CI / lint (pull_request)" [level=4] [ref=e757]:
+                                    - link "CI / lint (pull_request)" [ref=e758] [cursor=pointer]:
+                                      - /url: /gustavovalverde/better-auth/actions/runs/23974734616/job/69929870209?pr=21
+                                  - generic [ref=e759]: Queued — Waiting to run this check...
+                                - button "More actions" [ref=e763] [cursor=pointer]:
+                                  - img [ref=e764]
+                              - listitem "CI / test (22.x) (pull_request) waiting for status to be reported" [ref=e766]:
+                                - generic [ref=e770]:
+                                  - img [ref=e772]
+                                  - img "CI / test (22.x) (pull_request)" [ref=e774]
+                                - generic [ref=e775]:
+                                  - heading "CI / test (22.x) (pull_request)" [level=4] [ref=e776]:
+                                    - link "CI / test (22.x) (pull_request)" [ref=e777] [cursor=pointer]:
+                                      - /url: /gustavovalverde/better-auth/actions/runs/23974734616/job/69929870255?pr=21
+                                  - generic [ref=e778]: Queued — Waiting to run this check...
+                                - button "More actions" [ref=e782] [cursor=pointer]:
+                                  - img [ref=e783]
+                              - listitem "CI / test (24.x) (pull_request) waiting for status to be reported" [ref=e785]:
+                                - generic [ref=e789]:
+                                  - img [ref=e791]
+                                  - img "CI / test (24.x) (pull_request)" [ref=e793]
+                                - generic [ref=e794]:
+                                  - heading "CI / test (24.x) (pull_request)" [level=4] [ref=e795]:
+                                    - link "CI / test (24.x) (pull_request)" [ref=e796] [cursor=pointer]:
+                                      - /url: /gustavovalverde/better-auth/actions/runs/23974734616/job/69929870196?pr=21
+                                  - generic [ref=e797]: Queued — Waiting to run this check...
+                                - button "More actions" [ref=e801] [cursor=pointer]:
+                                  - img [ref=e802]
+                              - listitem "CI / typecheck (pull_request) waiting for status to be reported" [ref=e804]:
+                                - generic [ref=e808]:
+                                  - img [ref=e810]
+                                  - img "CI / typecheck (pull_request)" [ref=e812]
+                                - generic [ref=e813]:
+                                  - heading "CI / typecheck (pull_request)" [level=4] [ref=e814]:
+                                    - link "CI / typecheck (pull_request)" [ref=e815] [cursor=pointer]:
+                                      - /url: /gustavovalverde/better-auth/actions/runs/23974734616/job/69929870190?pr=21
+                                  - generic [ref=e816]: Queued — Waiting to run this check...
+                                - button "More actions" [ref=e820] [cursor=pointer]:
+                                  - img [ref=e821]
+                              - listitem "E2E / @better-auth-test/adapter-factory Integration Test (pull_request) waiting for status to be reported" [ref=e823]:
+                                - generic [ref=e827]:
+                                  - img [ref=e829]
+                                  - img "E2E / @better-auth-test/adapter-factory Integration Test (pull_request)" [ref=e831]
+                                - generic [ref=e832]:
+                                  - heading "E2E / @better-auth-test/adapter-factory Integration Test (pull_request)" [level=4] [ref=e833]:
+                                    - link "E2E / @better-auth-test/adapter-factory Integration Test (pull_request)" [ref=e834] [cursor=pointer]:
+                                      - /url: /gustavovalverde/better-auth/actions/runs/23974734628/job/69929870354?pr=21
+                                  - generic [ref=e835]: Queued — Waiting to run this check...
+                                - button "More actions" [ref=e839] [cursor=pointer]:
+                                  - img [ref=e840]
+                              - listitem "E2E / @better-auth-test/drizzle-adapter Integration Test (pull_request) waiting for status to be reported" [ref=e842]:
+                                - generic [ref=e846]:
+                                  - img [ref=e848]
+                                  - img "E2E / @better-auth-test/drizzle-adapter Integration Test (pull_request)" [ref=e850]
+                                - generic [ref=e851]:
+                                  - heading "E2E / @better-auth-test/drizzle-adapter Integration Test (pull_request)" [level=4] [ref=e852]:
+                                    - link "E2E / @better-auth-test/drizzle-adapter Integration Test (pull_request)" [ref=e853] [cursor=pointer]:
+                                      - /url: /gustavovalverde/better-auth/actions/runs/23974734628/job/69929870359?pr=21
+                                  - generic [ref=e854]: Queued — Waiting to run this check...
+                                - button "More actions" [ref=e858] [cursor=pointer]:
+                                  - img [ref=e859]
+                              - listitem "E2E / @better-auth-test/kysely-prisma-adapter Integration Test (pull_request) waiting for status to be reported" [ref=e861]:
+                                - generic [ref=e865]:
+                                  - img [ref=e867]
+                                  - img "E2E / @better-auth-test/kysely-prisma-adapter Integration Test (pull_request)" [ref=e869]
+                                - generic [ref=e870]:
+                                  - heading "E2E / @better-auth-test/kysely-prisma-adapter Integration Test (pull_request)" [level=4] [ref=e871]:
+                                    - link "E2E / @better-auth-test/kysely-prisma-adapter Integration Test (pull_request)" [ref=e872] [cursor=pointer]:
+                                      - /url: /gustavovalverde/better-auth/actions/runs/23974734628/job/69929870346?pr=21
+                                  - generic [ref=e873]: Queued — Waiting to run this check...
+                                - button "More actions" [ref=e877] [cursor=pointer]:
+                                  - img [ref=e878]
+                              - listitem "E2E / @better-auth-test/memory-adapter Integration Test (pull_request) waiting for status to be reported" [ref=e880]:
+                                - generic [ref=e884]:
+                                  - img [ref=e886]
+                                  - img "E2E / @better-auth-test/memory-adapter Integration Test (pull_request)" [ref=e888]
+                                - generic [ref=e889]:
+                                  - heading "E2E / @better-auth-test/memory-adapter Integration Test (pull_request)" [level=4] [ref=e890]:
+                                    - link "E2E / @better-auth-test/memory-adapter Integration Test (pull_request)" [ref=e891] [cursor=pointer]:
+                                      - /url: /gustavovalverde/better-auth/actions/runs/23974734628/job/69929870342?pr=21
+                                  - generic [ref=e892]: Queued — Waiting to run this check...
+                                - button "More actions" [ref=e896] [cursor=pointer]:
+                                  - img [ref=e897]
+                              - listitem "E2E / @better-auth-test/mongo-adapter Integration Test (pull_request) waiting for status to be reported" [ref=e899]:
+                                - generic [ref=e903]:
+                                  - img [ref=e905]
+                                  - img "E2E / @better-auth-test/mongo-adapter Integration Test (pull_request)" [ref=e907]
+                                - generic [ref=e908]:
+                                  - heading "E2E / @better-auth-test/mongo-adapter Integration Test (pull_request)" [level=4] [ref=e909]:
+                                    - link "E2E / @better-auth-test/mongo-adapter Integration Test (pull_request)" [ref=e910] [cursor=pointer]:
+                                      - /url: /gustavovalverde/better-auth/actions/runs/23974734628/job/69929870343?pr=21
+                                  - generic [ref=e911]: Queued — Waiting to run this check...
+                                - button "More actions" [ref=e915] [cursor=pointer]:
+                                  - img [ref=e916]
+                              - listitem "E2E / @better-auth-test/prisma-adapter Integration Test (pull_request) waiting for status to be reported" [ref=e918]:
+                                - generic [ref=e922]:
+                                  - img [ref=e924]
+                                  - img "E2E / @better-auth-test/prisma-adapter Integration Test (pull_request)" [ref=e926]
+                                - generic [ref=e927]:
+                                  - heading "E2E / @better-auth-test/prisma-adapter Integration Test (pull_request)" [level=4] [ref=e928]:
+                                    - link "E2E / @better-auth-test/prisma-adapter Integration Test (pull_request)" [ref=e929] [cursor=pointer]:
+                                      - /url: /gustavovalverde/better-auth/actions/runs/23974734628/job/69929870345?pr=21
+                                  - generic [ref=e930]: Queued — Waiting to run this check...
+                                - button "More actions" [ref=e934] [cursor=pointer]:
+                                  - img [ref=e935]
+                              - listitem "E2E / Integration test (pull_request) waiting for status to be reported" [ref=e937]:
+                                - generic [ref=e941]:
+                                  - img [ref=e943]
+                                  - img "E2E / Integration test (pull_request)" [ref=e945]
+                                - generic [ref=e946]:
+                                  - heading "E2E / Integration test (pull_request)" [level=4] [ref=e947]:
+                                    - link "E2E / Integration test (pull_request)" [ref=e948] [cursor=pointer]:
+                                      - /url: /gustavovalverde/better-auth/actions/runs/23974734628/job/69929870337?pr=21
+                                  - generic [ref=e949]: Queued — Waiting to run this check...
+                                - button "More actions" [ref=e953] [cursor=pointer]:
+                                  - img [ref=e954]
+                              - listitem "E2E / Smoke test (pull_request) waiting for status to be reported" [ref=e956]:
+                                - generic [ref=e960]:
+                                  - img [ref=e962]
+                                  - img "E2E / Smoke test (pull_request)" [ref=e964]
+                                - generic [ref=e965]:
+                                  - heading "E2E / Smoke test (pull_request)" [level=4] [ref=e966]:
+                                    - link "E2E / Smoke test (pull_request)" [ref=e967] [cursor=pointer]:
+                                      - /url: /gustavovalverde/better-auth/actions/runs/23974734628/job/69929870317?pr=21
+                                  - generic [ref=e968]: Queued — Waiting to run this check...
+                                - button "More actions" [ref=e972] [cursor=pointer]:
+                                  - img [ref=e973]
+                              - listitem "Publish Any Commit / build (pull_request) waiting for status to be reported" [ref=e975]:
+                                - generic [ref=e979]:
+                                  - img [ref=e981]
+                                  - img "Publish Any Commit / build (pull_request)" [ref=e983]
+                                - generic [ref=e984]:
+                                  - heading "Publish Any Commit / build (pull_request)" [level=4] [ref=e985]:
+                                    - link "Publish Any Commit / build (pull_request)" [ref=e986] [cursor=pointer]:
+                                      - /url: /gustavovalverde/better-auth/actions/runs/23974734617/job/69929870322?pr=21
+                                  - generic [ref=e987]: Queued — Waiting to run this check...
+                                - button "More actions" [ref=e991] [cursor=pointer]:
+                                  - img [ref=e992]
+                      - generic [ref=e994]:
+                        - button "Collapse 5 successful checks group" [expanded] [ref=e996] [cursor=pointer]:
+                          - generic [ref=e997]:
+                            - generic [ref=e998]: 5 successful checks
+                            - generic:
+                              - generic:
+                                - img
+                        - group "successful checks" [ref=e999]:
+                          - generic [ref=e1001]:
+                            - heading "successful checks" [level=3] [ref=e1002]
+                            - list "successful checks" [ref=e1003]:
+                              - listitem "Demo / demo (electron) (pull_request) successful in 1m" [ref=e1004]:
+                                - generic [ref=e1008]:
+                                  - img [ref=e1010]
+                                  - img "Demo / demo (electron) (pull_request)" [ref=e1012]
+                                - generic [ref=e1013]:
+                                  - heading "Demo / demo (electron) (pull_request)" [level=4] [ref=e1014]:
+                                    - link "Demo / demo (electron) (pull_request)" [ref=e1015] [cursor=pointer]:
+                                      - /url: /gustavovalverde/better-auth/actions/runs/23974734622/job/69929870194?pr=21
+                                  - generic [ref=e1016]: Successful in 1m
+                                - button "More actions" [ref=e1020] [cursor=pointer]:
+                                  - img [ref=e1021]
+                              - listitem "Demo / demo (expo) (pull_request) successful in 1m" [ref=e1023]:
+                                - generic [ref=e1027]:
+                                  - img [ref=e1029]
+                                  - img "Demo / demo (expo) (pull_request)" [ref=e1031]
+                                - generic [ref=e1032]:
+                                  - heading "Demo / demo (expo) (pull_request)" [level=4] [ref=e1033]:
+                                    - link "Demo / demo (expo) (pull_request)" [ref=e1034] [cursor=pointer]:
+                                      - /url: /gustavovalverde/better-auth/actions/runs/23974734622/job/69929870205?pr=21
+                                  - generic [ref=e1035]: Successful in 1m
+                                - button "More actions" [ref=e1039] [cursor=pointer]:
+                                  - img [ref=e1040]
+                              - listitem "Demo / demo (nextjs) (pull_request) successful in 1m" [ref=e1042]:
+                                - generic [ref=e1046]:
+                                  - img [ref=e1048]
+                                  - img "Demo / demo (nextjs) (pull_request)" [ref=e1050]
+                                - generic [ref=e1051]:
+                                  - heading "Demo / demo (nextjs) (pull_request)" [level=4] [ref=e1052]:
+                                    - link "Demo / demo (nextjs) (pull_request)" [ref=e1053] [cursor=pointer]:
+                                      - /url: /gustavovalverde/better-auth/actions/runs/23974734622/job/69929870223?pr=21
+                                  - generic [ref=e1054]: Successful in 1m
+                                - button "More actions" [ref=e1058] [cursor=pointer]:
+                                  - img [ref=e1059]
+                              - listitem "Demo / demo (oidc-client) (pull_request) successful in 1m" [ref=e1061]:
+                                - generic [ref=e1065]:
+                                  - img [ref=e1067]
+                                  - img "Demo / demo (oidc-client) (pull_request)" [ref=e1069]
+                                - generic [ref=e1070]:
+                                  - heading "Demo / demo (oidc-client) (pull_request)" [level=4] [ref=e1071]:
+                                    - link "Demo / demo (oidc-client) (pull_request)" [ref=e1072] [cursor=pointer]:
+                                      - /url: /gustavovalverde/better-auth/actions/runs/23974734622/job/69929870225?pr=21
+                                  - generic [ref=e1073]: Successful in 1m
+                                - button "More actions" [ref=e1077] [cursor=pointer]:
+                                  - img [ref=e1078]
+                              - listitem "Demo / demo (stateless) (pull_request) successful in 1m" [ref=e1080]:
+                                - generic [ref=e1084]:
+                                  - img [ref=e1086]
+                                  - img "Demo / demo (stateless) (pull_request)" [ref=e1088]
+                                - generic [ref=e1089]:
+                                  - heading "Demo / demo (stateless) (pull_request)" [level=4] [ref=e1090]:
+                                    - link "Demo / demo (stateless) (pull_request)" [ref=e1091] [cursor=pointer]:
+                                      - /url: /gustavovalverde/better-auth/actions/runs/23974734622/job/69929870224?pr=21
+                                  - generic [ref=e1092]: Successful in 1m
+                                - button "More actions" [ref=e1096] [cursor=pointer]:
+                                  - img [ref=e1097]
+                  - region "Conflicts" [ref=e1099]:
+                    - generic [ref=e1102]:
+                      - img [ref=e1106]
+                      - generic [ref=e1109]:
+                        - heading "No conflicts with base branch" [level=3] [ref=e1110]
+                        - paragraph [ref=e1111]: Merging can be performed automatically.
+                  - generic [ref=e1113]:
+                    - generic [ref=e1114]:
+                      - button "Squash and merge" [ref=e1116] [cursor=pointer]:
+                        - generic [ref=e1118]: Squash and merge
+                      - button "Select merge method" [ref=e1120] [cursor=pointer]:
+                        - img [ref=e1121]
+                    - generic [ref=e1123]:
+                      - text: You can also merge this with the command line.
+                      - button "View command line instructions." [ref=e1124] [cursor=pointer]
+                - generic [ref=e1125]:
+                  - generic [ref=e1126]: Still in progress?
+                  - button "Convert to draft" [ref=e1127] [cursor=pointer]:
+                    - generic [ref=e1129]: Convert to draft
+            - generic [ref=e475]:
+              - link "@gustavovalverde" [ref=e477] [cursor=pointer]:
+                - /url: /gustavovalverde
+                - img "@gustavovalverde" [ref=e478]
+              - form "Add a comment" [ref=e481]:
+                - group [ref=e482]:
+                  - heading "Add a comment" [level=4] [ref=e485]
+                  - generic [ref=e486]: Comment
+                  - generic [ref=e487]:
+                    - generic [ref=e488]:
+                      - tablist "Add a comment" [ref=e489]:
+                        - tab "Write" [selected] [ref=e490] [cursor=pointer]
+                        - tab "Preview" [ref=e491] [cursor=pointer]
+                      - toolbar [ref=e492]:
+                        - generic [ref=e493]:
+                          - button "Mention Copilot" [ref=e495] [cursor=pointer]:
+                            - img
+                          - separator [ref=e496]
+                          - button "Heading" [ref=e498] [cursor=pointer]:
+                            - img
+                          - button "Bold" [ref=e500] [cursor=pointer]:
+                            - img
+                          - button "Italic" [ref=e502] [cursor=pointer]:
+                            - img
+                          - button "Quote" [ref=e504] [cursor=pointer]:
+                            - img
+                          - button "Code" [ref=e506] [cursor=pointer]:
+                            - img
+                          - button "Link" [ref=e508] [cursor=pointer]:
+                            - img
+                          - separator [ref=e509]
+                          - button "Numbered list" [ref=e511] [cursor=pointer]:
+                            - img
+                          - button "Unordered list" [ref=e513] [cursor=pointer]:
+                            - img
+                          - button "Task list" [ref=e515] [cursor=pointer]:
+                            - img
+                          - separator [ref=e516]
+                          - button "Attach files" [ref=e518] [cursor=pointer]:
+                            - img
+                          - button "Mention" [ref=e520] [cursor=pointer]:
+                            - img
+                          - button "Reference" [ref=e522] [cursor=pointer]:
+                            - img
+                          - button "Saved replies" [ref=e524] [cursor=pointer]:
+                            - img
+                          - button "Slash commands" [ref=e526] [cursor=pointer]:
+                            - img
+                    - tabpanel "Write" [ref=e527]:
+                      - generic [ref=e532]:
+                        - textbox "Comment" [ref=e533]:
+                          - /placeholder: " "
+                        - paragraph: Add your comment here...
+                      - generic [ref=e534]:
+                        - link "Markdown is supported" [ref=e536] [cursor=pointer]:
+                          - /url: https://docs.github.com/github/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax
+                          - generic [ref=e537]:
+                            - generic:
+                              - img
+                            - generic [ref=e538]: Markdown is supported
+                        - button "Paste, drop, or click to add files" [ref=e539] [cursor=pointer]:
+                          - generic [ref=e540]:
+                            - generic:
+                              - img
+                            - generic [ref=e541]: Paste, drop, or click to add files
+                - generic [ref=e544]:
+                  - button "Close pull request" [ref=e546] [cursor=pointer]:
+                    - img [ref=e547]
+                    - text: Close pull request
+                  - button "Comment" [disabled] [ref=e550]
+              - generic [ref=e551]:
+                - img [ref=e552]
+                - generic [ref=e554]:
+                  - text: Remember, contributions to this repository should follow its
+                  - link "contributing guidelines" [ref=e555] [cursor=pointer]:
+                    - /url: /gustavovalverde/better-auth/blob/4c8a5f41b5314f15057dc71acb6d47c458e0bd7a/CONTRIBUTING.md
+                  - text: ","
+                  - link "security policy" [ref=e556] [cursor=pointer]:
+                    - /url: /gustavovalverde/better-auth/blob/4c8a5f41b5314f15057dc71acb6d47c458e0bd7a/SECURITY.md
+                  - text: ", and"
+                  - link "code of conduct" [ref=e557] [cursor=pointer]:
+                    - /url: /gustavovalverde/better-auth/blob/4c8a5f41b5314f15057dc71acb6d47c458e0bd7a/CODE_OF_CONDUCT.md
+                  - text: .
+              - generic [ref=e558]:
+                - img [ref=e559]
+                - strong [ref=e561]: ProTip!
+                - text: Add
+                - link ".patch" [ref=e562] [cursor=pointer]:
+                  - /url: /gustavovalverde/better-auth/pull/21.patch
+                - text: or
+                - link ".diff" [ref=e563] [cursor=pointer]:
+                  - /url: /gustavovalverde/better-auth/pull/21.diff
+                - text: to the end of URLs for Git’s plaintext views.
+        - generic [ref=e567]:
+          - form "Select reviewers" [ref=e569]:
+            - group [ref=e570]:
+              - button "Reviewers" [ref=e571] [cursor=pointer]:
+                - img [ref=e572]
+                - text: Reviewers
+            - text: No reviews
+            - generic [ref=e574]:
+              - generic [ref=e575]: Still in progress?
+              - group [ref=e576]:
+                - button "Convert to draft" [ref=e577] [cursor=pointer]
+          - form "Select assignees" [ref=e579]:
+            - group [ref=e580]:
+              - button "Assignees" [ref=e581] [cursor=pointer]:
+                - img [ref=e582]
+                - text: Assignees
+            - generic [ref=e584]:
+              - text: No one—
+              - button "assign yourself" [ref=e585] [cursor=pointer]
+          - generic [ref=e586]:
+            - group [ref=e587]:
+              - button "Labels" [ref=e588] [cursor=pointer]:
+                - img [ref=e589]
+                - text: Labels
+            - generic [ref=e591]: None yet
+          - form "Select projects" [ref=e593]:
+            - group [ref=e594]:
+              - button "Projects" [ref=e595] [cursor=pointer]:
+                - img [ref=e596]
+                - text: Projects
+            - text: None yet
+          - form "Select milestones" [ref=e599]:
+            - group [ref=e600]:
+              - button "Milestone" [ref=e601] [cursor=pointer]:
+                - img [ref=e602]
+                - text: Milestone
+            - text: No milestone
+          - form "Link issues" [ref=e609]:
+            - heading "Development" [level=3] [ref=e610]
+            - paragraph [ref=e611]: Successfully merging this pull request may close these issues.
+            - paragraph [ref=e613]: None yet
+          - generic [ref=e615]:
+            - button "Notifications Customize" [ref=e618] [cursor=pointer]:
+              - generic [ref=e619]:
+                - generic [ref=e620]: Notifications
+                - generic [ref=e621]: Customize
+            - button "Unsubscribe" [ref=e623] [cursor=pointer]:
+              - generic [ref=e624]:
+                - generic:
+                  - img
+                - generic [ref=e625]: Unsubscribe
+            - paragraph [ref=e626]: You’re receiving notifications because you authored the thread.
+          - generic [ref=e628]:
+            - heading "1 participant" [level=3] [ref=e629]
+            - link "@gustavovalverde" [ref=e631] [cursor=pointer]:
+              - /url: /gustavovalverde
+              - img "@gustavovalverde" [ref=e632]
+          - group [ref=e634]:
+            - button "Lock conversation" [ref=e635] [cursor=pointer]:
+              - img [ref=e636]
+              - strong [ref=e638]: Lock conversation
+  - contentinfo [ref=e639]:
+    - heading "Footer" [level=2] [ref=e640]
+    - generic [ref=e641]:
+      - generic [ref=e642]:
+        - link "GitHub Homepage" [ref=e643] [cursor=pointer]:
+          - /url: https://github.com
+          - img [ref=e644]
+        - generic [ref=e646]: © 2026 GitHub, Inc.
+      - navigation "Footer" [ref=e647]:
+        - heading "Footer navigation" [level=3] [ref=e648]
+        - list "Footer navigation" [ref=e649]:
+          - listitem [ref=e650]:
+            - link "Terms" [ref=e651] [cursor=pointer]:
+              - /url: https://docs.github.com/site-policy/github-terms/github-terms-of-service
+          - listitem [ref=e652]:
+            - link "Privacy" [ref=e653] [cursor=pointer]:
+              - /url: https://docs.github.com/site-policy/privacy-policies/github-privacy-statement
+          - listitem [ref=e654]:
+            - link "Security" [ref=e655] [cursor=pointer]:
+              - /url: https://github.com/security
+          - listitem [ref=e656]:
+            - link "Status" [ref=e657] [cursor=pointer]:
+              - /url: https://www.githubstatus.com/
+          - listitem [ref=e658]:
+            - link "Community" [ref=e659] [cursor=pointer]:
+              - /url: https://github.community/
+          - listitem [ref=e660]:
+            - link "Docs" [ref=e661] [cursor=pointer]:
+              - /url: https://docs.github.com/
+          - listitem [ref=e662]:
+            - link "Contact" [ref=e663] [cursor=pointer]:
+              - /url: https://support.github.com?tags=dotcom-footer
+          - listitem [ref=e664]:
+            - button "Manage cookies" [ref=e666] [cursor=pointer]
+          - listitem [ref=e667]:
+            - button "Do not share my personal information" [ref=e669] [cursor=pointer]
