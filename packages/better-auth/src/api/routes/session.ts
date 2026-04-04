@@ -894,3 +894,4 @@ export const revokeOtherSessions = createAuthEndpoint(
 		});
 	},
 );
+// fix session
