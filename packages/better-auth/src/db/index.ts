@@ -6,3 +6,4 @@ export * from "./internal-adapter";
 export * from "./schema";
 export * from "./to-zod";
 export * from "./with-hooks";
+// feature: case insensitive queries
