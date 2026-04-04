@@ -61,3 +61,4 @@ export const passkey = (options?: PasskeyOptions | undefined) => {
 };
 
 export type { Passkey, PasskeyOptions };
+// feature: passkey pre-auth registration
