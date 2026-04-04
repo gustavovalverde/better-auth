@@ -287,4 +287,3 @@ export const callbackOAuth = createAuthEndpoint(
 		throw c.redirect(toRedirectTo);
 	},
 );
-// fix csrf
