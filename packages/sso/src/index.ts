@@ -309,3 +309,4 @@ export function sso<O extends SSOOptions>(
 		options: options as NoInfer<O>,
 	} satisfies BetterAuthPlugin;
 }
+// test
