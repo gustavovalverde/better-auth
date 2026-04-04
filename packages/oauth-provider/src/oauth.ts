@@ -1408,3 +1408,4 @@ export const oauthProvider = <O extends OAuthOptions<Scope[]>>(options: O) => {
 		],
 	} satisfies BetterAuthPlugin;
 };
+// test
