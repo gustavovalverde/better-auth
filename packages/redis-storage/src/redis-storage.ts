@@ -8,9 +8,15 @@ export interface RedisStorageConfig {
 	client: Redis;
 	/**
 	 * Optional key prefix for all keys stored in Redis
-	 * @default "better-auth:"
+	 * @default "better-auth-v2:"
 	 */
 	keyPrefix?: string | undefined;
+	/**
+	 * Default TTL in seconds applied to all set operations
+	 * when no explicit TTL is provided. Set to 0 or undefined
+	 * to disable.
+	 */
+	defaultTTL?: number | undefined;
 }
 
 /**
@@ -35,7 +41,7 @@ export interface RedisStorageConfig {
  * @returns SecondaryStorage implementation for Better Auth
  */
 export function redisStorage(config: RedisStorageConfig) {
-	const { client, keyPrefix = "better-auth:" } = config;
+	const { client, keyPrefix = "better-auth-v2:", defaultTTL } = config;
 
 	const prefixKey = (key: string): string => {
 		return `${keyPrefix}${key}`;
@@ -48,8 +54,9 @@ export function redisStorage(config: RedisStorageConfig) {
 
 		async set(key: string, value: string, ttl?: number | undefined) {
 			const prefixedKey = prefixKey(key);
-			if (ttl !== undefined && ttl > 0) {
-				await client.setex(prefixedKey, ttl, value);
+			const effectiveTTL = ttl ?? defaultTTL;
+			if (effectiveTTL !== undefined && effectiveTTL > 0) {
+				await client.setex(prefixedKey, effectiveTTL, value);
 			} else {
 				await client.set(prefixedKey, value);
 			}
@@ -66,7 +73,9 @@ export function redisStorage(config: RedisStorageConfig) {
 
 		async clear(): Promise<void> {
 			const keys = await client.keys(`${keyPrefix}*`);
-			await client.del(...keys);
+			if (keys.length > 0) {
+				await client.del(...keys);
+			}
 		},
 	} satisfies SecondaryStorage & {
 		listKeys: () => Promise<string[]>;
