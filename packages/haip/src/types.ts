@@ -7,8 +7,6 @@ export type HaipOptions = {
 	requirePar?: boolean;
 	/** Require DPoP sender-constrained tokens. Default: true */
 	requireDpop?: boolean;
-	/** Allowed DPoP signing algorithms. Default: ["ES256"] */
-	dpopSigningAlgValues?: string[];
 	/** PAR request_uri lifetime in seconds. Default: 60 */
 	parExpiresInSeconds?: number;
 	/** VP authorization request lifetime in seconds. Default: 300 */

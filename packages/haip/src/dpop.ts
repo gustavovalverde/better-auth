@@ -1,62 +1,9 @@
-import { generateRandomString } from "better-auth/crypto";
 import {
 	calculateJwkThumbprint,
 	decodeProtectedHeader,
 	importJWK,
 	jwtVerify,
 } from "jose";
-
-/**
- * Creates a token binding handler that validates DPoP proofs at the token endpoint
- * and returns sender-constrained token metadata (RFC 9449).
- *
- * When a DPoP header is present, the handler:
- * 1. Verifies the DPoP proof JWT (alg, typ, htm, htu, iat, jti)
- * 2. Computes the JWK thumbprint from the proof header
- * 3. Returns { tokenType: "DPoP", cnf: { jkt }, responseHeaders }
- *
- * When no DPoP header is present, returns null (Bearer token).
- */
-export function createDpopTokenBinding(options?: {
-	/** Supported DPoP proof signing algorithms */
-	supportedAlgs?: string[];
-	/** Whether to always require DPoP (reject Bearer) */
-	requireDpop?: boolean;
-}) {
-	const supportedAlgs = new Set(options?.supportedAlgs ?? ["ES256"]);
-
-	return async (input: {
-		request: Request;
-		headers: Headers;
-		method: string;
-		url: string;
-		accessToken?: string;
-	}) => {
-		const dpopProof = input.headers.get("DPoP");
-		if (!dpopProof) {
-			if (options?.requireDpop) {
-				throw new Error("DPoP proof required");
-			}
-			return null;
-		}
-
-		const { jkt } = await verifyDpopProof(dpopProof, {
-			supportedAlgs,
-			expectedMethod: input.method,
-			expectedUrl: input.url,
-		});
-
-		const dpopNonce = generateRandomString(22);
-
-		return {
-			tokenType: "DPoP",
-			cnf: { jkt },
-			responseHeaders: {
-				"DPoP-Nonce": dpopNonce,
-			},
-		};
-	};
-}
 
 /**
  * Creates an access token validator that enforces DPoP binding at the credential endpoint.

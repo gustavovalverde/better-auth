@@ -12,11 +12,7 @@ import {
 	SignJWT,
 } from "jose";
 import { describe, expect, it } from "vitest";
-import {
-	createDpopAccessTokenValidator,
-	createDpopTokenBinding,
-	haip,
-} from "../src";
+import { createDpopAccessTokenValidator, haip } from "../src";
 import { requireApi } from "./api-helpers";
 
 describe("haip - DPoP token binding", async () => {
@@ -41,7 +37,6 @@ describe("haip - DPoP token binding", async () => {
 					"authorization_code",
 					"urn:ietf:params:oauth:grant-type:pre-authorized_code",
 				],
-				tokenBinding: createDpopTokenBinding(),
 				silenceWarnings: {
 					oauthAuthServerConfig: true,
 					openidConfig: true,
@@ -160,59 +155,14 @@ describe("haip - DPoP token binding", async () => {
 		expect((payload.cnf as any)?.jkt).toBe(dpopJkt);
 	});
 
-	it("returns DPoP-Nonce header", async () => {
-		const { headers, user } = await signInWithTestUser();
-
-		const walletClient = await adminCreateOAuthClient({
-			headers,
-			body: {
-				redirect_uris: ["https://wallet.example/cb"],
-				token_endpoint_auth_method: "none",
-				grant_types: [
-					"authorization_code",
-					"urn:ietf:params:oauth:grant-type:pre-authorized_code",
-				],
-				skip_consent: true,
-			},
-		});
-
-		const offer = await createCredentialOffer({
-			headers,
-			body: {
-				client_id: walletClient.client_id,
-				userId: user.id,
-				credential_configuration_id: "kyc_sdjwt_v1",
-			},
-		});
-
-		const preAuthorizedCode = offer.credential_offer.grants[
-			"urn:ietf:params:oauth:grant-type:pre-authorized_code"
-		]?.["pre-authorized_code"] as string;
-
-		const tokenUrl = `${authServerBaseUrl}/api/auth/oauth2/token`;
-		const dpopProof = await buildDpopProof({
-			method: "POST",
-			url: tokenUrl,
-		});
-
-		const form = new URLSearchParams();
-		form.set(
-			"grant_type",
-			"urn:ietf:params:oauth:grant-type:pre-authorized_code",
-		);
-		form.set("pre-authorized_code", preAuthorizedCode);
-		form.set("client_id", walletClient.client_id);
-
-		const tokenRes = await customFetchImpl(tokenUrl, {
-			method: "POST",
-			headers: new Headers({
-				"content-type": "application/x-www-form-urlencoded",
-				DPoP: dpopProof,
-			}),
-			body: form.toString(),
-		});
-
-		expect(tokenRes.headers.get("DPoP-Nonce")).toBeTruthy();
+	it("binds the access token natively without issuing a DPoP-Nonce challenge", async () => {
+		// 1.7 native DPoP (#10039) owns the token endpoint: it sender-constrains the
+		// token via cnf.jkt but does not run the optional RFC 9449 server-nonce
+		// challenge, so no DPoP-Nonce header is returned.
+		const { tokenRes, json } = await getTokensWithDpop();
+		expect(tokenRes.status).toBe(200);
+		expect(json.token_type).toBe("DPoP");
+		expect(tokenRes.headers.get("DPoP-Nonce")).toBeNull();
 	});
 
 	it("credential endpoint validates DPoP binding", async () => {

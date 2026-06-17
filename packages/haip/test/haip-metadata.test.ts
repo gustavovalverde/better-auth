@@ -52,9 +52,14 @@ describe("haip - metadata composition", async () => {
 		expect(metadata.require_pushed_authorization_requests).toBe(true);
 	});
 
-	it("adds dpop_signing_alg_values_supported", async () => {
+	it("advertises dpop_signing_alg_values_supported (owned by native DPoP)", async () => {
 		const metadata = await fetchMetadata();
-		expect(metadata.dpop_signing_alg_values_supported).toEqual(["ES256"]);
+		expect(Array.isArray(metadata.dpop_signing_alg_values_supported)).toBe(
+			true,
+		);
+		expect(
+			(metadata.dpop_signing_alg_values_supported as unknown[]).length,
+		).toBeGreaterThan(0);
 	});
 
 	it("adds authorization_details_types_supported", async () => {
@@ -64,7 +69,7 @@ describe("haip - metadata composition", async () => {
 		]);
 	});
 
-	it("respects custom dpopSigningAlgValues option", async () => {
+	it("respects requirePar: false option", async () => {
 		const customOptions = {
 			baseURL: authServerBaseUrl,
 			plugins: [
@@ -83,7 +88,7 @@ describe("haip - metadata composition", async () => {
 						{ id: "test_v1", vct: "urn:example:test:v1" },
 					],
 				}),
-				haip({ dpopSigningAlgValues: ["ES256", "ES384"] }),
+				haip({ requirePar: false }),
 			],
 		} satisfies BetterAuthOptions;
 
@@ -93,9 +98,6 @@ describe("haip - metadata composition", async () => {
 				string,
 				unknown
 			>;
-		expect(metadata.dpop_signing_alg_values_supported).toEqual([
-			"ES256",
-			"ES384",
-		]);
+		expect(metadata.require_pushed_authorization_requests).toBe(false);
 	});
 });

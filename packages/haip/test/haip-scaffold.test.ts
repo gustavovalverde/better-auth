@@ -1,16 +1,12 @@
 import type { BetterAuthOptions } from "@better-auth/core";
 import { oauthProvider } from "@better-auth/oauth-provider";
 import { oidc4vci } from "@better-auth/oidc4vci";
-import { generateRandomString } from "better-auth/crypto";
-import {
-	authorizationCodeRequest,
-	createAuthorizationURL,
-} from "better-auth/oauth2";
 import { jwt } from "better-auth/plugins/jwt";
 import { getTestInstance } from "better-auth/test";
 import { decodeJwt } from "jose";
-import { beforeAll, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { haip } from "../src";
+import { requireApi } from "./api-helpers";
 
 describe("haip - scaffold", () => {
 	it("registers haip plugin alongside oauthProvider + oidc4vci + jwt", async () => {
@@ -48,11 +44,14 @@ describe("haip - scaffold", () => {
 });
 
 describe("haip - authorization_details propagation", async () => {
+	// 1.7 delivers RFC 9396 authorization_details through the OID4VCI
+	// pre-authorized_code grant (the grant handler stamps it into both the token
+	// response and the JWT access-token claims). Native oauth-provider no longer
+	// round-trips authorization_details through the plain authorization_code flow,
+	// so the haip stack is exercised through the path that actually carries it.
 	const authServerBaseUrl = "http://localhost:3000";
-	const rpBaseUrl = "http://localhost:5000";
 	const credentialEndpoint = `${authServerBaseUrl}/api/auth/oidc4vci/credential`;
-	const providerId = "test";
-	const redirectUri = `${rpBaseUrl}/api/auth/oauth2/callback/${providerId}`;
+	const credentialConfigurationId = "kyc_sdjwt_v1";
 
 	const authOptions = {
 		baseURL: authServerBaseUrl,
@@ -63,15 +62,19 @@ describe("haip - authorization_details propagation", async () => {
 				consentPage: "/consent",
 				enforcePerClientResources: false,
 				resources: [credentialEndpoint],
-				grantTypes: ["authorization_code"],
+				grantTypes: [
+					"authorization_code",
+					"urn:ietf:params:oauth:grant-type:pre-authorized_code",
+				],
 				silenceWarnings: {
 					oauthAuthServerConfig: true,
 					openidConfig: true,
 				},
 			}),
 			oidc4vci({
+				allowAccessTokenInBody: true,
 				credentialConfigurations: [
-					{ id: "kyc_sdjwt_v1", vct: "urn:example:kyc:v1" },
+					{ id: credentialConfigurationId, vct: "urn:example:kyc:v1" },
 				],
 			}),
 			haip(),
@@ -80,137 +83,87 @@ describe("haip - authorization_details propagation", async () => {
 
 	const { auth, customFetchImpl, signInWithTestUser } =
 		await getTestInstance(authOptions);
+	const { adminCreateOAuthClient, createCredentialOffer } = requireApi(
+		auth.api,
+		["adminCreateOAuthClient", "createCredentialOffer"] as const,
+	);
 
-	const client = (await import("better-auth/client")).createAuthClient({
-		plugins: [
-			(
-				await import("@better-auth/oauth-provider/client")
-			).oauthProviderClient(),
-		],
-		baseURL: authServerBaseUrl,
-		fetchOptions: { customFetchImpl },
-	});
+	async function preAuthorizedFlow() {
+		const { headers, user } = await signInWithTestUser();
 
-	let oauthClient: { client_id: string; client_secret: string };
-	let userHeaders: Headers;
-
-	beforeAll(async () => {
-		const { headers } = await signInWithTestUser();
-		userHeaders = headers;
-
-		const response = await auth.api.adminCreateOAuthClient!({
+		const walletClient = await adminCreateOAuthClient({
 			headers,
 			body: {
-				redirect_uris: [redirectUri],
+				redirect_uris: ["https://wallet.example/cb"],
+				token_endpoint_auth_method: "none",
+				grant_types: [
+					"authorization_code",
+					"urn:ietf:params:oauth:grant-type:pre-authorized_code",
+				],
 				skip_consent: true,
 			},
 		});
-		oauthClient = response as typeof oauthClient;
-	});
 
-	async function authCodeFlow(params?: {
-		additionalParams?: Record<string, string>;
-		scopes?: string[];
-		resource?: string;
-	}) {
-		const codeVerifier = generateRandomString(32);
-		const { url: authUrl } = await createAuthorizationURL({
-			id: providerId,
-			options: {
-				clientId: oauthClient.client_id,
-				clientSecret: oauthClient.client_secret,
-				redirectURI: redirectUri,
-			},
-			redirectURI: "",
-			authorizationEndpoint: `${authServerBaseUrl}/api/auth/oauth2/authorize`,
-			state: "test-state",
-			scopes: params?.scopes ?? ["openid"],
-			codeVerifier,
-			additionalParams: params?.additionalParams,
-		});
-
-		let callbackUrl = "";
-		await customFetchImpl(authUrl.toString(), {
-			method: "GET",
-			headers: userHeaders,
-			redirect: "manual",
-		}).then((res: Response) => {
-			callbackUrl = res.headers.get("Location") || "";
-		});
-
-		const url = new URL(callbackUrl, authServerBaseUrl);
-		const code = url.searchParams.get("code")!;
-
-		const { body, headers } = await authorizationCodeRequest({
-			code,
-			codeVerifier,
-			redirectURI: redirectUri,
-			options: {
-				clientId: oauthClient.client_id,
-				clientSecret: oauthClient.client_secret,
-				redirectURI: redirectUri,
-			},
-			resource: params?.resource,
-		});
-
-		const tokenRes = await client.$fetch<{
-			access_token?: string;
-			id_token?: string;
-			token_type?: string;
-			authorization_details?: unknown[];
-			[key: string]: unknown;
-		}>("/oauth2/token", {
-			method: "POST",
-			body,
+		const offer = await createCredentialOffer({
 			headers,
+			body: {
+				client_id: walletClient.client_id,
+				userId: user.id,
+				credential_configuration_id: credentialConfigurationId,
+			},
 		});
 
-		return tokenRes;
+		const preAuthorizedCode = offer.credential_offer.grants[
+			"urn:ietf:params:oauth:grant-type:pre-authorized_code"
+		]?.["pre-authorized_code"] as string;
+
+		const form = new URLSearchParams();
+		form.set(
+			"grant_type",
+			"urn:ietf:params:oauth:grant-type:pre-authorized_code",
+		);
+		form.set("pre-authorized_code", preAuthorizedCode);
+		form.set("client_id", walletClient.client_id);
+
+		const tokenRes = await customFetchImpl(
+			`${authServerBaseUrl}/api/auth/oauth2/token`,
+			{
+				method: "POST",
+				headers: new Headers({
+					"content-type": "application/x-www-form-urlencoded",
+				}),
+				body: form.toString(),
+			},
+		);
+
+		return (await tokenRes.json()) as {
+			access_token: string;
+			authorization_details?: Array<{
+				type: string;
+				credential_configuration_id?: string;
+				credential_identifiers?: string[];
+			}>;
+		};
 	}
 
-	it("propagates authorization_details from auth code to token response", async () => {
-		const authzDetails = [
-			{
-				type: "openid_credential",
-				credential_configuration_id: "kyc_sdjwt_v1",
-			},
-		];
+	it("propagates authorization_details from the grant to the token response", async () => {
+		const json = await preAuthorizedFlow();
 
-		const tokenRes = await authCodeFlow({
-			additionalParams: {
-				authorization_details: JSON.stringify(authzDetails),
-			},
-		});
-
-		expect(tokenRes.data?.authorization_details).toEqual(authzDetails);
+		expect(json.authorization_details).toBeDefined();
+		const detail = json.authorization_details?.[0];
+		expect(detail?.type).toBe("openid_credential");
+		expect(detail?.credential_configuration_id).toBe(credentialConfigurationId);
+		expect(detail?.credential_identifiers?.length).toBeGreaterThan(0);
 	});
 
-	it("embeds authorization_details in JWT access token when resource is specified", async () => {
-		const authzDetails = [
-			{
-				type: "openid_credential",
-				credential_configuration_id: "kyc_sdjwt_v1",
-			},
-		];
+	it("embeds authorization_details in the JWT access token", async () => {
+		const json = await preAuthorizedFlow();
 
-		const tokenRes = await authCodeFlow({
-			additionalParams: {
-				authorization_details: JSON.stringify(authzDetails),
-			},
-			resource: credentialEndpoint,
-		});
-
-		expect(tokenRes.data?.authorization_details).toEqual(authzDetails);
-
-		const accessToken = tokenRes.data?.access_token;
-		expect(accessToken).toBeDefined();
-		const payload = decodeJwt(accessToken!);
-		expect(payload.authorization_details).toEqual(authzDetails);
-	});
-
-	it("omits authorization_details when not present in authorize request", async () => {
-		const tokenRes = await authCodeFlow();
-
-		expect(tokenRes.data?.authorization_details).toBeUndefined();
+		expect(json.access_token).toBeDefined();
+		const payload = decodeJwt(json.access_token) as {
+			authorization_details?: Array<{ type: string }>;
+		};
+		expect(payload.authorization_details?.[0]?.type).toBe("openid_credential");
+		expect(payload.authorization_details).toEqual(json.authorization_details);
 	});
 });

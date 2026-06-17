@@ -5,11 +5,7 @@ import { jwt } from "better-auth/plugins/jwt";
 import { getTestInstance } from "better-auth/test";
 import { exportJWK, generateKeyPair, SignJWT } from "jose";
 import { describe, expect, it } from "vitest";
-import {
-	createWalletAttestationStrategy,
-	haip,
-	WALLET_ATTESTATION_TYPE,
-} from "../src";
+import { haip, WALLET_ATTESTATION_TYPE } from "../src";
 import { requireApi } from "./api-helpers";
 
 describe("haip - wallet attestation client auth", async () => {
@@ -39,9 +35,6 @@ describe("haip - wallet attestation client auth", async () => {
 					"authorization_code",
 					"urn:ietf:params:oauth:grant-type:pre-authorized_code",
 				],
-				clientAuthStrategies: {
-					[WALLET_ATTESTATION_TYPE]: createWalletAttestationStrategy(),
-				},
 				silenceWarnings: {
 					oauthAuthServerConfig: true,
 					openidConfig: true,
@@ -79,9 +72,13 @@ describe("haip - wallet attestation client auth", async () => {
 			.setIssuer("https://wallet-manufacturer.example")
 			.sign(manufacturerKp.privateKey);
 
-		const popJwt = await new SignJWT({})
+		// 1.7 client-auth hygiene (RFC 7523 §3): the PoP must bind to the token
+		// endpoint (aud), carry a bounded exp, and a single-use jti so it cannot be
+		// forged or replayed.
+		const popJwt = await new SignJWT({ jti: crypto.randomUUID() })
 			.setProtectedHeader({ alg: "ES256" })
 			.setIssuedAt()
+			.setExpirationTime("120s")
 			.setAudience(`${authServerBaseUrl}/api/auth/oauth2/token`)
 			.sign(walletInstanceKp.privateKey);
 
@@ -91,12 +88,13 @@ describe("haip - wallet attestation client auth", async () => {
 	it("accepts attest_jwt_client_auth at token endpoint", async () => {
 		const { headers, user } = await signInWithTestUser();
 
-		// Create a public client (no secret) — wallet attestation is the auth method
+		// Register the client for wallet attestation: 1.7 enforces that the proven
+		// client-auth method matches the client's registered token_endpoint_auth_method.
 		const walletClient = await adminCreateOAuthClient({
 			headers,
 			body: {
 				redirect_uris: ["https://wallet.example/cb"],
-				token_endpoint_auth_method: "none",
+				token_endpoint_auth_method: WALLET_ATTESTATION_TYPE,
 				grant_types: [
 					"authorization_code",
 					"urn:ietf:params:oauth:grant-type:pre-authorized_code",

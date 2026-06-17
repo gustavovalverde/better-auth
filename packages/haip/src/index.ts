@@ -21,10 +21,7 @@ declare module "@better-auth/core" {
 
 export type { DcqlClaimQuery, DcqlCredentialQuery, DcqlQuery } from "./dcql";
 export { buildDcqlQuery, createDcqlMatcher } from "./dcql";
-export {
-	createDpopAccessTokenValidator,
-	createDpopTokenBinding,
-} from "./dpop";
+export { createDpopAccessTokenValidator } from "./dpop";
 export { createJarmHandler } from "./jarm";
 export { createKeyAttestationValidator } from "./key-attestation";
 export { createParResolver } from "./par";
@@ -56,9 +53,6 @@ export function haip(options?: HaipOptions) {
 				metadata: ({ ctx: endpointCtx }) => ({
 					pushed_authorization_request_endpoint: `${endpointCtx.context.baseURL}/oauth2/par`,
 					require_pushed_authorization_requests: options?.requirePar ?? true,
-					dpop_signing_alg_values_supported: options?.dpopSigningAlgValues ?? [
-						"ES256",
-					],
 					authorization_details_types_supported: ["openid_credential"],
 				}),
 				clientAuthentication: {
