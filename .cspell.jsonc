@@ -71,6 +71,9 @@
 		"encPrivateKeyPass:\\s*\"[^\"]*\"",
 		"\"x\":\\s*\"[^\"]*\"",
 
+		// ignore long base64 / cert / JWT literals (x5c chains, keys, tokens)
+		"[A-Za-z0-9+/_-]{24,}={0,2}",
+
 		// markdown links to x.com or github accounts
 		"\\[@[^\\]]+\\]\\([^\\)]+\\)",
 		"\\[[^\\]]+\\]\\(https://github\\.com/\\w+\\)",
