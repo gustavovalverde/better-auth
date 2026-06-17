@@ -1,3 +1,4 @@
+import type { GenericEndpointContext } from "@better-auth/core";
 import { getOAuthProviderApi } from "@better-auth/oauth-provider";
 import {
 	APIError,
@@ -9,18 +10,96 @@ import { CIBA_GRANT_TYPE } from "./constants";
 import { CIBA_ERROR_CODES } from "./error-codes";
 import { deliverError, deliverPing, deliverPush } from "./push";
 import type { CibaOptions } from "./types";
+import type { CibaRequest } from "./utils";
 import {
 	buildCibaIssuanceExtras,
 	consumePendingCibaRequest,
 	deleteCibaRequest,
 	findCibaRequestByHash,
+	findCibaRequestById,
 	getOAuthOptions,
 	hashAuthReqId,
 	updateCibaRequest,
 } from "./utils";
 
-const approvalBody = z.object({ auth_req_id: z.string().min(1) });
+/**
+ * Approval accepts one of two identifiers:
+ * - `auth_req_id`: the raw, high-entropy token. The out-of-band approval flow
+ *   (a link delivered to the user) carries it; the endpoint hashes it to find
+ *   the request. Required for push delivery, which echoes it back to the client.
+ * - `request_id`: the request's primary id. A first-party, session-authenticated
+ *   UI lists the user's own pending requests by id and never holds the raw token
+ *   (only its hash is stored). Ownership is enforced by the session, so this is
+ *   not a weaker credential for the resource owner.
+ */
+const approvalBody = z
+	.object({
+		auth_req_id: z.string().min(1).optional(),
+		request_id: z.string().min(1).optional(),
+	})
+	.refine((body) => Boolean(body.auth_req_id) !== Boolean(body.request_id), {
+		message: "Provide exactly one of auth_req_id or request_id",
+	});
+
 const DEFAULT_PUSH_RETRY = 3;
+
+/**
+ * Resolves the pending request the caller is acting on, by raw `auth_req_id`
+ * (hashed) or by `request_id`, then enforces ownership, expiry, and pending
+ * status. A missing request and one owned by another user return the same error,
+ * so a session cannot probe for others' request ids.
+ */
+async function resolveOwnedPendingRequest(
+	ctx: GenericEndpointContext,
+	identifier: { authReqId?: string; requestId?: string },
+	userId: string,
+): Promise<CibaRequest> {
+	const request = identifier.requestId
+		? await findCibaRequestById(ctx, identifier.requestId)
+		: await findCibaRequestByHash(
+				ctx,
+				await hashAuthReqId(identifier.authReqId as string),
+			);
+	if (!request || request.userId !== userId) {
+		throw new APIError("NOT_FOUND", {
+			error: "invalid_request",
+			error_description: CIBA_ERROR_CODES.INVALID_GRANT.message,
+		});
+	}
+	if (request.expiresAt < new Date()) {
+		await deleteCibaRequest(ctx, request.id);
+		throw new APIError("BAD_REQUEST", {
+			error: "expired_token",
+			error_description: CIBA_ERROR_CODES.EXPIRED_TOKEN.message,
+		});
+	}
+	if (request.status !== "pending") {
+		throw new APIError("BAD_REQUEST", {
+			error: "invalid_request",
+			error_description: `Request is already ${request.status}`,
+		});
+	}
+	return request;
+}
+
+/**
+ * Push delivery mints and pushes the token set inline, echoing the raw
+ * `auth_req_id` so the client can correlate it. That value is unrecoverable from
+ * a `request_id` approval (only the hash is stored), so push must be approved
+ * with `auth_req_id`.
+ */
+function assertPushHasRawToken(
+	request: CibaRequest,
+	authReqId: string | undefined,
+): void {
+	if (request.deliveryMode === "push" && !authReqId) {
+		throw new APIError("BAD_REQUEST", {
+			error: "invalid_request",
+			error_description:
+				"Push delivery requires approval by auth_req_id, not request_id.",
+		});
+	}
+}
 
 /**
  * POST /ciba/authorize — the authenticated user approves a pending request. The
@@ -45,31 +124,12 @@ export function createCibaAuthorize(options: CibaOptions) {
 			},
 		},
 		async (ctx) => {
-			const request = await findCibaRequestByHash(
+			const request = await resolveOwnedPendingRequest(
 				ctx,
-				await hashAuthReqId(ctx.body.auth_req_id),
+				{ authReqId: ctx.body.auth_req_id, requestId: ctx.body.request_id },
+				ctx.context.session.user.id,
 			);
-			if (!request || request.userId !== ctx.context.session.user.id) {
-				// Same response whether the request is missing or owned by another
-				// user, so a session cannot probe for others' request ids.
-				throw new APIError("NOT_FOUND", {
-					error: "invalid_request",
-					error_description: CIBA_ERROR_CODES.INVALID_GRANT.message,
-				});
-			}
-			if (request.expiresAt < new Date()) {
-				await deleteCibaRequest(ctx, request.id);
-				throw new APIError("BAD_REQUEST", {
-					error: "expired_token",
-					error_description: CIBA_ERROR_CODES.EXPIRED_TOKEN.message,
-				});
-			}
-			if (request.status !== "pending") {
-				throw new APIError("BAD_REQUEST", {
-					error: "invalid_request",
-					error_description: `Request is already ${request.status}`,
-				});
-			}
+			assertPushHasRawToken(request, ctx.body.auth_req_id);
 
 			// Push: mint and deliver the token set inline. The request is atomically
 			// claimed before delivery, so a failed push cannot be replayed by polling.
@@ -124,7 +184,7 @@ export function createCibaAuthorize(options: CibaOptions) {
 				void deliverPush(
 					request.clientNotificationEndpoint,
 					request.clientNotificationToken,
-					{ auth_req_id: ctx.body.auth_req_id, ...tokens },
+					{ auth_req_id: ctx.body.auth_req_id as string, ...tokens },
 					pushRetry,
 				).catch(() => {
 					// Tokens are minted and the request consumed; the client must
@@ -139,8 +199,11 @@ export function createCibaAuthorize(options: CibaOptions) {
 			});
 
 			// Ping: tell the client the request is ready to be polled (best-effort).
+			// Skipped on a request_id approval, which has no raw token to correlate;
+			// the client still reaches the approved request on its next poll.
 			if (
 				request.deliveryMode === "ping" &&
+				ctx.body.auth_req_id &&
 				request.clientNotificationEndpoint &&
 				request.clientNotificationToken
 			) {
@@ -178,29 +241,13 @@ export function createCibaReject(options: CibaOptions) {
 			},
 		},
 		async (ctx) => {
-			const request = await findCibaRequestByHash(
+			const request = await resolveOwnedPendingRequest(
 				ctx,
-				await hashAuthReqId(ctx.body.auth_req_id),
+				{ authReqId: ctx.body.auth_req_id, requestId: ctx.body.request_id },
+				ctx.context.session.user.id,
 			);
-			if (!request || request.userId !== ctx.context.session.user.id) {
-				throw new APIError("NOT_FOUND", {
-					error: "invalid_request",
-					error_description: CIBA_ERROR_CODES.INVALID_GRANT.message,
-				});
-			}
-			if (request.expiresAt < new Date()) {
-				await deleteCibaRequest(ctx, request.id);
-				throw new APIError("BAD_REQUEST", {
-					error: "expired_token",
-					error_description: CIBA_ERROR_CODES.EXPIRED_TOKEN.message,
-				});
-			}
-			if (request.status !== "pending") {
-				throw new APIError("BAD_REQUEST", {
-					error: "invalid_request",
-					error_description: `Request is already ${request.status}`,
-				});
-			}
+			assertPushHasRawToken(request, ctx.body.auth_req_id);
+
 			await updateCibaRequest(ctx, request.id, { status: "rejected" });
 
 			if (
@@ -211,7 +258,7 @@ export function createCibaReject(options: CibaOptions) {
 				void deliverError(
 					request.clientNotificationEndpoint,
 					request.clientNotificationToken,
-					ctx.body.auth_req_id,
+					ctx.body.auth_req_id as string,
 					"access_denied",
 					CIBA_ERROR_CODES.ACCESS_DENIED.message,
 					pushRetry,

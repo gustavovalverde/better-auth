@@ -427,6 +427,82 @@ describe("ciba poll flow", () => {
 		const pending = await poll(authReqId);
 		expect(pending.body.error).toBe("authorization_pending");
 	});
+
+	it("approves by request_id for the owning session", async () => {
+		const ctx = await auth.$context;
+		const start = await bcAuthorize({
+			scope: "openid",
+			login_hint: testUser.email,
+		});
+		const authReqId = start.body.auth_req_id as string;
+		// A first-party UI lists the request by id and never holds the raw token
+		// (only its hash is stored), so it approves by request_id instead.
+		const row = await ctx.adapter.findOne<{ id: string }>({
+			model: "cibaRequest",
+			where: [{ field: "authReqId", value: await hashAuthReqId(authReqId) }],
+		});
+		expect(row?.id).toBeDefined();
+
+		await auth.api.cibaAuthorize({
+			headers,
+			body: { request_id: row?.id as string },
+		});
+
+		const issued = await poll(authReqId);
+		expect(issued.status).toBe(200);
+		expect(issued.body.access_token).toBeDefined();
+	});
+
+	it("does not let another user approve by request_id", async () => {
+		const ctx = await auth.$context;
+		const start = await bcAuthorize({
+			scope: "openid",
+			login_hint: testUser.email,
+		});
+		const authReqId = start.body.auth_req_id as string;
+		const row = await ctx.adapter.findOne<{ id: string }>({
+			model: "cibaRequest",
+			where: [{ field: "authReqId", value: await hashAuthReqId(authReqId) }],
+		});
+
+		await expect(
+			auth.api.cibaAuthorize({
+				headers: secondUserHeaders,
+				body: { request_id: row?.id as string },
+			}),
+		).rejects.toThrow();
+
+		const pending = await poll(authReqId);
+		expect(pending.body.error).toBe("authorization_pending");
+	});
+
+	it("rejects by request_id for the owning session", async () => {
+		const ctx = await auth.$context;
+		const start = await bcAuthorize({
+			scope: "openid",
+			login_hint: testUser.email,
+		});
+		const authReqId = start.body.auth_req_id as string;
+		const row = await ctx.adapter.findOne<{ id: string }>({
+			model: "cibaRequest",
+			where: [{ field: "authReqId", value: await hashAuthReqId(authReqId) }],
+		});
+
+		await auth.api.cibaReject({
+			headers,
+			body: { request_id: row?.id as string },
+		});
+
+		const denied = await poll(authReqId);
+		expect(denied.status).toBe(400);
+		expect(denied.body.error).toBe("access_denied");
+	});
+
+	it("requires exactly one of auth_req_id or request_id", async () => {
+		await expect(
+			auth.api.cibaAuthorize({ headers, body: {} }),
+		).rejects.toThrow();
+	});
 });
 
 describe("ciba public client", () => {
