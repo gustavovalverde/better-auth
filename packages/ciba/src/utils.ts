@@ -86,6 +86,22 @@ export async function findCibaRequestByHash(
 	});
 }
 
+/**
+ * Looks up a request by its primary id. Used by the session-authenticated
+ * approval endpoints, where a first-party UI references a request it owns by id
+ * rather than by the raw `auth_req_id` (which it never holds, since only the
+ * hash is stored).
+ */
+export async function findCibaRequestById(
+	ctx: GenericEndpointContext,
+	id: string,
+): Promise<CibaRequest | null> {
+	return ctx.context.adapter.findOne<CibaRequest>({
+		model: "cibaRequest",
+		where: [{ field: "id", value: id }],
+	});
+}
+
 /** Applies a single-row update keyed on the primary id (no compare-and-swap). */
 export async function updateCibaRequest(
 	ctx: GenericEndpointContext,

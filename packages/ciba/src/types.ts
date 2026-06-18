@@ -43,9 +43,12 @@ export interface SendNotificationData {
 export interface CibaOptions {
 	/**
 	 * Notify the user of a pending backchannel request on a separate channel
-	 * (email, push, SMS, ...). Invoked as fire-and-forget: a thrown error is
-	 * logged and the request still returns its `auth_req_id`, so notification
-	 * delivery never blocks the agent.
+	 * (email, push, SMS, ...). Best-effort: it is awaited so delivery is attempted
+	 * before the backchannel responds, which keeps it reliable on serverless where
+	 * work scheduled after the response can be frozen. A thrown error is caught
+	 * and logged, and the request still returns its `auth_req_id`. Because it is
+	 * awaited, a slow channel delays the response; keep the handler fast or enqueue
+	 * the slow work yourself.
 	 */
 	sendNotification: (
 		data: SendNotificationData,
@@ -135,11 +138,13 @@ export interface CibaOptions {
 	/**
 	 * Enforce the request's `acr_values` against the authorizing user at token
 	 * issuance (CIBA's analogue of an authorization-time step-up check). Called
-	 * with the claimed request just before tokens are minted; the user has been
-	 * loaded and the request approved. Throw an `APIError` to refuse issuance
-	 * (for example a `403 insufficient_authorization` step-up challenge). The
-	 * request has already been consumed when this runs, so a refusal does not
-	 * leave a replayable approved row.
+	 * with the approved request just before it is consumed and tokens are minted;
+	 * the user is loaded and the request is approved but not yet claimed. Throw an
+	 * `APIError` to refuse issuance (for example a `403 insufficient_authorization`
+	 * step-up challenge). Because this runs before the single-use consume, a
+	 * refusal leaves the approved row intact so the client can retry after the user
+	 * elevates their authentication; bound repeated step-up failures inside the
+	 * hook if you need to limit retries.
 	 */
 	enforceTokenAcr?: (
 		cibaRequest: CibaRequest,
