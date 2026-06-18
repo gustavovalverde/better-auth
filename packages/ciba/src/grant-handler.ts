@@ -63,7 +63,11 @@ export function createCibaGrantHandler(
 
 		// slow_down: a poll faster than the interval ratchets the interval up for
 		// this and subsequent polls (CIBA §11) and is rejected. lastPolledAt is left
-		// untouched so the gate keeps measuring from the last accepted poll.
+		// untouched in that branch so the gate keeps measuring from the last accepted
+		// poll. This read-then-write check is not atomic, so a client that fans out
+		// simultaneous polls can occasionally slip an extra one through; slow_down is
+		// advisory rate limiting, and the hard single-use guarantee is the atomic
+		// consume below, not this gate.
 		const now = Date.now();
 		if (
 			request.lastPolledAt &&

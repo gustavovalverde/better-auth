@@ -48,13 +48,18 @@ export const ciba = (options: CibaOptions) => {
 					backchannel_user_code_parameter_supported: false,
 				}),
 				claims: {
-					// `act.sub` (RFC 8693 §4.1) names the calling client as the actor on
-					// the user's behalf. Emitting it from a grant-type-stable contributor
-					// (rather than only as a per-issuance JWT claim) keeps it visible at
-					// opaque-token introspection, where the grant type is not known. The
-					// actor is the token's own client, registered for the CIBA grant.
-					accessToken: ({ client }) =>
-						client.grantTypes?.includes(CIBA_GRANT_TYPE)
+					// `act.sub` (RFC 8693 §4.1) names the calling client as the actor
+					// acting on the user's behalf, which is true only for tokens issued
+					// through the CIBA grant. Emit it for that grant, and also when the
+					// grant type is unknown (`undefined`) so opaque-token introspection,
+					// which re-derives claims without a grant type, still reports the actor
+					// on a CIBA token. A client registered for both `authorization_code`
+					// and CIBA therefore keeps an `act`-free access token on its code flow;
+					// only introspection of such a client's opaque tokens can over-attribute,
+					// the unavoidable cost of re-derivation without per-token storage.
+					accessToken: ({ client, grantType }) =>
+						client.grantTypes?.includes(CIBA_GRANT_TYPE) &&
+						(grantType === CIBA_GRANT_TYPE || grantType === undefined)
 							? { act: { sub: client.clientId } }
 							: {},
 				},

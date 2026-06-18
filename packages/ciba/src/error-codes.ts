@@ -19,7 +19,7 @@ export const CIBA_ERROR_CODES = defineErrorCodes({
 	EXACTLY_ONE_HINT:
 		"Exactly one of login_hint, id_token_hint, or login_hint_token is required",
 	UNSUPPORTED_DELIVERY_MODE:
-		'The client must be registered with backchannel_token_delivery_mode "poll"',
+		"The client is not registered with a backchannel_token_delivery_mode this deployment supports",
 	// Token endpoint poll (CIBA §11).
 	AUTHORIZATION_PENDING: "The authorization request is still pending",
 	SLOW_DOWN: "Polling too frequently; increase the interval",
