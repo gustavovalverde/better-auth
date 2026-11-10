@@ -2,6 +2,7 @@ import { getListFromStatusListJWT } from "@owf/token-status-list";
 import { createLocalJWKSet, decodeJwt, jwtVerify } from "jose";
 import { describe, expect, it } from "vitest";
 import {
+	AUTH_BASE_URL,
 	BASE_URL,
 	CONFIG_ID,
 	createIssuer,
@@ -63,6 +64,22 @@ describe("oidc4vci - credential endpoint", async () => {
 		const { disclosedClaims } = parseSdJwt(credential);
 		expect(disclosedClaims).toContain("email");
 		expect(verified.payload.email).toBeUndefined();
+	});
+
+	/**
+	 * @see https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#section-7.1
+	 */
+	it("returns a c_nonce for an empty POST without a content type", async () => {
+		const res = await issuer.customFetchImpl(
+			`${AUTH_BASE_URL}/oidc4vci/nonce`,
+			{
+				method: "POST",
+				body: new Uint8Array(),
+			},
+		);
+		expect(res.status).toBe(200);
+		expect(res.headers.get("cache-control")).toBe("no-store");
+		expect((await res.json()).c_nonce).toBeTypeOf("string");
 	});
 
 	it("accepts the credential_identifier from the token response", async () => {
