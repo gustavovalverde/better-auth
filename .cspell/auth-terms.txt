@@ -42,3 +42,8 @@ jkt
 reissuance
 TOCTOU
 SSOOIDC
+haip
+dcql
+sdjwt
+jarm
+WSCD
