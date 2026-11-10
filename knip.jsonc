@@ -65,6 +65,15 @@
 			// neverBundle externals: referenced in bundled output, not in source
 			"ignoreDependencies": ["@better-fetch/fetch", "better-call"]
 		},
+		"packages/haip": {
+			"project": ["src/**/*.ts!", "test/**/*.ts"]
+		},
+		"packages/oidc4vci": {
+			"project": ["src/**/*.ts!", "test/**/*.ts"]
+		},
+		"packages/oidc4vp": {
+			"project": ["src/**/*.ts!", "test/**/*.ts"]
+		},
 		"packages/electron": {
 			"entry": ["src/index.ts!", "src/client.typecheck.ts"],
 			"project": ["src/**/*.ts!", "test/**/*.ts"]
