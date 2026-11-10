@@ -19,7 +19,7 @@ export async function signSdJwtJwt(
 	input: {
 		payload: Record<string, unknown>;
 		jwtOptions?: JwtOptions;
-		header?: Record<string, unknown>;
+		header?: { typ?: string; [key: string]: unknown };
 		applyDefaultClaims?: boolean;
 	},
 ) {
@@ -43,7 +43,10 @@ export async function signSdJwtJwt(
 	}
 
 	if (jwtOptions?.jwt?.sign) {
-		return await jwtOptions.jwt.sign(payload);
+		// A custom signer owns the protected header, so pass it the media type
+		// the token profile requires (e.g. `statuslist+jwt`).
+		const typ = input.header?.typ;
+		return await jwtOptions.jwt.sign(payload, typ ? { typ } : undefined);
 	}
 
 	const { key, alg } = await getOrCreateSigningKey(ctx, jwtOptions);
