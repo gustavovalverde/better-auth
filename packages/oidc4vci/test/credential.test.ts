@@ -1,5 +1,12 @@
 import { getListFromStatusListJWT } from "@owf/token-status-list";
-import { createLocalJWKSet, decodeJwt, jwtVerify } from "jose";
+import {
+	createLocalJWKSet,
+	decodeJwt,
+	decodeProtectedHeader,
+	generateKeyPair,
+	jwtVerify,
+	SignJWT,
+} from "jose";
 import { describe, expect, it } from "vitest";
 import {
 	AUTH_BASE_URL,
@@ -59,6 +66,7 @@ describe("oidc4vci - credential endpoint", async () => {
 			createLocalJWKSet(await getJwks({})),
 			{ issuer: BASE_URL },
 		);
+		expect(verified.protectedHeader.typ).toBe("dc+sd-jwt");
 		expect(verified.payload.vct).toBe("urn:example:kyc:v1");
 		expect(verified.payload.cnf).toEqual({ jwk });
 		const { disclosedClaims } = parseSdJwt(credential);
@@ -415,5 +423,46 @@ describe("oidc4vci - credential endpoint", async () => {
 				body: { credential_id: record!.id, status: 0 },
 			}),
 		).rejects.toMatchObject({ status: "FORBIDDEN" });
+	});
+});
+
+describe("oidc4vci - custom JWT signer", async () => {
+	const signingKey = await generateKeyPair("EdDSA");
+	const signerHeaders: Array<{ typ?: string; cty?: string } | undefined> = [];
+	const issuer = await createIssuer({
+		jwt: {
+			jwks: {
+				remoteUrl: `${BASE_URL}/remote/jwks`,
+				keyPairConfig: { alg: "EdDSA" },
+			},
+			jwt: {
+				issuer: BASE_URL,
+				sign: async (payload, header) => {
+					signerHeaders.push(header);
+					return new SignJWT(payload)
+						.setProtectedHeader({ typ: "JWT", ...header, alg: "EdDSA" })
+						.sign(signingKey.privateKey);
+				},
+			},
+		},
+	});
+
+	/**
+	 * @see https://datatracker.ietf.org/doc/html/draft-ietf-oauth-status-list#section-5.1
+	 */
+	it("passes the statuslist+jwt type to the signer", async () => {
+		const res = await issuer.customFetchImpl(
+			`${AUTH_BASE_URL}/oidc4vci/status-list`,
+			{ method: "GET" },
+		);
+		expect(res.status).toBe(200);
+		const statusList = await res.text();
+
+		expect(signerHeaders).toContainEqual({ typ: "statuslist+jwt" });
+		expect(decodeProtectedHeader(statusList).typ).toBe("statuslist+jwt");
+		await jwtVerify(statusList, async () => signingKey.publicKey, {
+			typ: "statuslist+jwt",
+		});
+		expect(getListFromStatusListJWT(statusList).getStatus(0)).toBe(0);
 	});
 });
