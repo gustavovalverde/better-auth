@@ -1,5 +1,6 @@
 import type { AuthContext, BetterAuthOptions } from "@better-auth/core";
 import { oauthProvider } from "@better-auth/oauth-provider";
+import type { JwtOptions } from "better-auth/plugins";
 import { jwt } from "better-auth/plugins/jwt";
 import { getTestInstance } from "better-auth/test";
 import type { JWK } from "jose";
@@ -109,13 +110,14 @@ export async function createJwtProof(input: {
 }
 
 export async function createIssuer(overrides?: {
+	jwt?: JwtOptions;
 	oidc4vci?: Partial<Oidc4vciOptions>;
 	plugins?: BetterAuthOptions["plugins"];
 }) {
 	const authOptions = {
 		baseURL: BASE_URL,
 		plugins: [
-			jwt({ jwt: { issuer: BASE_URL } }),
+			jwt(overrides?.jwt ?? { jwt: { issuer: BASE_URL } }),
 			oauthProvider({
 				loginPage: "/login",
 				consentPage: "/consent",
