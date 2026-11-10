@@ -42,4 +42,10 @@ jkt
 reissuance
 TOCTOU
 SSOOIDC
+WSCD
+dcql
 fapi
+haip
+jarm
+sdjwt
+||||||| parent of 4f8c2a4a9 (feat: add haip, oidc4vci, and oidc4vp plugins for Better Auth 1.8)

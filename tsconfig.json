@@ -25,6 +25,15 @@
       "path": "./packages/cimd/tsconfig.json"
     },
     {
+      "path": "./packages/haip/tsconfig.json"
+    },
+    {
+      "path": "./packages/oidc4vci/tsconfig.json"
+    },
+    {
+      "path": "./packages/oidc4vp/tsconfig.json"
+    },
+    {
       "path": "./packages/core/tsconfig.json"
     },
     {

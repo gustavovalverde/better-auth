@@ -1,0 +1,21 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["esnext", "dom", "dom.iterable"]
+  },
+  "include": ["./src", "./test"],
+  "references": [
+    {
+      "path": "../better-auth/tsconfig.json"
+    },
+    {
+      "path": "../core/tsconfig.json"
+    },
+    {
+      "path": "../oauth-provider/tsconfig.json"
+    },
+    {
+      "path": "../oidc4vci/tsconfig.json"
+    }
+  ]
+}
