@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { createDpopNonce } from "@better-auth/core/oauth2";
+import { describe, expect, it, vi } from "vitest";
 import {
 	CONFIG_ID,
 	CREDENTIAL_URL,
@@ -178,5 +179,126 @@ describe("oidc4vci - required DPoP", async () => {
 		});
 		expect(res.status).toBe(401);
 		expect((await res.json()).error_description).toContain("algorithm");
+	});
+});
+
+describe("oidc4vci - DPoP nonces", async () => {
+	const issuer = await createIssuer({
+		dpop: { nonce: { required: true } },
+	});
+
+	async function boundRequest() {
+		const dpop = await createDpopKey();
+		const { tokens } = await issuer.issueAccessToken({ dpop });
+		return { dpop, accessToken: tokens.access_token };
+	}
+
+	async function credentialBody() {
+		const { proofJwt } = await createJwtProof({ nonce: await issuer.nonce() });
+		return {
+			credential_configuration_id: CONFIG_ID,
+			proofs: { jwt: [proofJwt] },
+		};
+	}
+
+	async function expectNonceChallenge(res: Response) {
+		expect(res.status).toBe(401);
+		expect((await res.json()).error).toBe("use_dpop_nonce");
+		expect(res.headers.get("www-authenticate")).toMatch(
+			/^DPoP error="use_dpop_nonce", error_description="[^"]+", algs="/,
+		);
+		expect(res.headers.get("cache-control")).toContain("no-store");
+		expect(res.headers.get("access-control-expose-headers")).toContain(
+			"DPoP-Nonce",
+		);
+		const nonce = res.headers.get("dpop-nonce");
+		expect(nonce).toBeTruthy();
+		return nonce!;
+	}
+
+	it("asks for a nonce, accepts the retry, and sends the next nonce", async () => {
+		const { dpop, accessToken } = await boundRequest();
+		const body = await credentialBody();
+
+		const nonce = await expectNonceChallenge(
+			await issuer.requestCredential({ accessToken, body, dpop }),
+		);
+		const retried = await issuer.requestCredential({
+			accessToken,
+			body,
+			dpop,
+			dpopNonce: nonce,
+		});
+		expect(retried.status).toBe(200);
+		expect(retried.headers.get("cache-control")).toContain("no-store");
+		const next = retried.headers.get("dpop-nonce");
+		expect(next).toBeTruthy();
+
+		const again = await boundRequest();
+		const reused = await issuer.requestCredential({
+			accessToken: again.accessToken,
+			body: await credentialBody(),
+			dpop: again.dpop,
+			dpopNonce: next!,
+		});
+		expect(reused.status).toBe(200);
+	});
+
+	it("accepts the nonce the token endpoint issued", async () => {
+		const dpop = await createDpopKey();
+		const session = await issuer.signInWithTestUser();
+		const clientId = await issuer.createWalletClient(session.headers);
+		const { code } = await issuer.createOffer(session.headers, {
+			client_id: clientId,
+			credential_configuration_id: CONFIG_ID,
+		});
+		const tokenResponse = await issuer.redeem({ code, clientId, dpop });
+		expect(tokenResponse.status).toBe(200);
+		const { access_token } = (await tokenResponse.json()) as {
+			access_token: string;
+		};
+
+		const res = await issuer.requestCredential({
+			accessToken: access_token,
+			body: await credentialBody(),
+			dpop,
+			dpopNonce: tokenResponse.headers.get("dpop-nonce")!,
+		});
+		expect(res.status).toBe(200);
+	});
+
+	it("refuses a nonce from another secret or past its lifetime", async () => {
+		const { dpop, accessToken } = await boundRequest();
+		const body = await credentialBody();
+		const secret = (await issuer.auth.$context).secret;
+		const foreign = await createDpopNonce({ secret: "another-secret-value" });
+		const clock = vi.spyOn(Date, "now").mockReturnValue(Date.now() - 600_000);
+		const stale = await createDpopNonce({ secret });
+		clock.mockRestore();
+
+		for (const dpopNonce of [foreign, stale]) {
+			await expectNonceChallenge(
+				await issuer.requestCredential({ accessToken, body, dpop, dpopNonce }),
+			);
+		}
+		// A refused proof consumes nothing.
+		const current = await createDpopNonce({ secret });
+		const res = await issuer.requestCredential({
+			accessToken,
+			body,
+			dpop,
+			dpopNonce: current,
+		});
+		expect(res.status).toBe(200);
+	});
+
+	it("leaves bearer tokens alone", async () => {
+		const { tokens } = await issuer.issueAccessToken();
+		const res = await issuer.requestCredential({
+			accessToken: tokens.access_token,
+			body: await credentialBody(),
+		});
+		expect(res.status).toBe(200);
+		expect(res.headers.get("dpop-nonce")).toBeNull();
 	});
 });
