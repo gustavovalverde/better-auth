@@ -1,7 +1,7 @@
 {
   "name": "@better-auth/oidc4vci",
   "author": "Gustavo Valverde",
-  "version": "1.8.0-beta.7",
+  "version": "1.8.0-beta.8",
   "description": "OIDC4VCI plugin for Better Auth (SD-JWT VC)",
   "type": "module",
   "license": "MIT",
