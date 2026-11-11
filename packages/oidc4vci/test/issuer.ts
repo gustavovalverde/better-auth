@@ -1,4 +1,5 @@
 import type { AuthContext, BetterAuthOptions } from "@better-auth/core";
+import type { OAuthOptions } from "@better-auth/oauth-provider";
 import { oauthProvider } from "@better-auth/oauth-provider";
 import type { JwtOptions } from "better-auth/plugins";
 import { jwt } from "better-auth/plugins/jwt";
@@ -58,6 +59,7 @@ export async function createDpopProof(
 		jti?: string;
 		ath?: string;
 		alg?: string;
+		nonce?: string;
 	},
 ) {
 	const ath =
@@ -77,6 +79,7 @@ export async function createDpopProof(
 		htu: input.url,
 		jti: input.jti ?? crypto.randomUUID(),
 		...(ath ? { ath } : {}),
+		...(input.nonce ? { nonce: input.nonce } : {}),
 	})
 		.setProtectedHeader({
 			alg: input.alg ?? key.alg,
@@ -110,6 +113,7 @@ export async function createJwtProof(input: {
 }
 
 export async function createIssuer(overrides?: {
+	dpop?: OAuthOptions["dpop"];
 	jwt?: JwtOptions;
 	oidc4vci?: Partial<Oidc4vciOptions>;
 	plugins?: BetterAuthOptions["plugins"];
@@ -133,6 +137,7 @@ export async function createIssuer(overrides?: {
 					oauthAuthServerConfig: true,
 					openidConfig: true,
 				},
+				...(overrides?.dpop ? { dpop: overrides.dpop } : {}),
 			}),
 			oidc4vci({
 				credentialConfigurations: [
@@ -191,20 +196,30 @@ export async function createIssuer(overrides?: {
 		if (input.clientId) form.set("client_id", input.clientId);
 		if (input.txCode) form.set("tx_code", input.txCode);
 		if (input.resource) form.set("resource", input.resource);
-		const headers = new Headers({
-			"content-type": "application/x-www-form-urlencoded",
-		});
-		if (input.dpop) {
-			headers.set(
-				"dpop",
-				await createDpopProof(input.dpop, { url: TOKEN_URL }),
-			);
+		const send = async (nonce?: string) => {
+			const headers = new Headers({
+				"content-type": "application/x-www-form-urlencoded",
+			});
+			if (input.dpop) {
+				headers.set(
+					"dpop",
+					await createDpopProof(input.dpop, { url: TOKEN_URL, nonce }),
+				);
+			}
+			return customFetchImpl(TOKEN_URL, {
+				method: "POST",
+				headers,
+				body: form.toString(),
+			});
+		};
+		// Retry once with the server's nonce, as RFC 9449 §8 clients do.
+		const res = await send();
+		const nonce = res.headers.get("dpop-nonce");
+		if (res.status === 400 && nonce) {
+			const body = (await res.clone().json()) as { error?: string };
+			if (body.error === "use_dpop_nonce") return send(nonce);
 		}
-		return customFetchImpl(TOKEN_URL, {
-			method: "POST",
-			headers,
-			body: form.toString(),
-		});
+		return res;
 	}
 
 	async function redeemTokens(input: Parameters<typeof redeem>[0]) {
@@ -240,6 +255,7 @@ export async function createIssuer(overrides?: {
 		accessToken: string;
 		body: Record<string, unknown>;
 		dpop?: DpopKey;
+		dpopNonce?: string;
 		dpopProof?: string;
 		scheme?: "Bearer" | "DPoP";
 		url?: string;
@@ -255,6 +271,7 @@ export async function createIssuer(overrides?: {
 				? await createDpopProof(input.dpop, {
 						url,
 						accessToken: input.accessToken,
+						nonce: input.dpopNonce,
 					})
 				: undefined);
 		if (proof) headers.set("dpop", proof);
