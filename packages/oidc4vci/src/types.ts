@@ -206,6 +206,8 @@ export type Oidc4vciOptions = {
 	/**
 	 * DPoP (RFC 9449) policy for the credential and deferred credential
 	 * endpoints. A DPoP-bound access token is always checked for a valid proof.
+	 * When the oauth-provider requires DPoP nonces (`dpop.nonce.required`),
+	 * the proof must also carry one, and responses send the next nonce.
 	 */
 	dpop?: {
 		/**
