@@ -31,14 +31,7 @@ export type {
 	DcqlQuery,
 } from "./dcql";
 export { createDcqlMatcher } from "./dcql";
-export type {
-	DpopAccessTokenValidatorInput,
-	DpopAccessTokenValidatorOptions,
-} from "./dpop";
-export {
-	createDpopAccessTokenValidator,
-	HAIP_DPOP_SIGNING_ALGORITHMS,
-} from "./dpop";
+export { HAIP_DPOP_SIGNING_ALGORITHMS } from "./dpop";
 export type { JarmDecryptionResult, JarmHandlerOptions } from "./jarm";
 export { createJarmHandler } from "./jarm";
 export type { KeyAttestationOptions } from "./key-attestation";
