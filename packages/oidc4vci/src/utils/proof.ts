@@ -1,5 +1,8 @@
 import type { GenericEndpointContext } from "@better-auth/core";
-import type { AccessTokenAuthorization } from "@better-auth/core/oauth2";
+import type {
+	AccessTokenAuthorization,
+	DpopBindingErrorCode,
+} from "@better-auth/core/oauth2";
 import {
 	createDpopReplayStore,
 	enforceDpopBinding,
@@ -19,7 +22,7 @@ import {
 } from "./resolvers";
 
 function throwDpopError(
-	error: "invalid_token" | "invalid_dpop_proof",
+	error: DpopBindingErrorCode,
 	description: string,
 ): never {
 	const safeDescription = description.replaceAll('"', "'");
