@@ -5,7 +5,6 @@ import type {
 	DpopNonceOptions,
 } from "@better-auth/core/oauth2";
 import {
-	createDpopNonce,
 	createDpopReplayStore,
 	DPOP_NONCE_HEADER,
 	enforceDpopBinding,
@@ -15,7 +14,6 @@ import {
 	verifyJwsAccessToken,
 } from "@better-auth/core/oauth2";
 import { createResourceServerChallenge } from "@better-auth/oauth-provider";
-import { withExposedHeaders } from "@better-auth/oauth-provider/internal";
 import { APIError } from "better-auth/api";
 import type { JWTPayload } from "jose";
 import { throwBearerTokenError } from "../error";
@@ -25,10 +23,7 @@ import {
 	resolveCredentialEndpoint,
 	resolveCredentialIssuer,
 } from "./resolvers";
-
-// RFC 6750 §3 limits error_description to printable ASCII without `"` or
-// `\`, and core DPoP messages can quote values (`typ must be "dpop+jwt"`).
-const AUTH_PARAM_UNSAFE = /[^\x20-\x21\x23-\x5b\x5d-\x7e]/g;
+import { getProviderApi } from "./token";
 
 function resolveDpopSigningAlgorithms(
 	ctx: GenericEndpointContext,
@@ -64,20 +59,16 @@ async function throwDpopError(
 	options: Oidc4vciOptions,
 	endpointUrl: string,
 	failure: { code: DpopBindingErrorCode; message: string },
-	nonce: DpopNonceOptions | undefined,
 ): Promise<never> {
+	const nextNonce =
+		failure.code === "use_dpop_nonce"
+			? await getProviderApi(ctx).issueDpopNonce()
+			: undefined;
 	const challenge = createResourceServerChallenge(
 		new APIError(
 			"UNAUTHORIZED",
-			{
-				error: failure.code,
-				error_description:
-					failure.message.replaceAll('"', "'").replace(AUTH_PARAM_UNSAFE, "") ||
-					"invalid DPoP proof",
-			},
-			failure.code === "use_dpop_nonce" && nonce
-				? { [DPOP_NONCE_HEADER]: await createDpopNonce(nonce) }
-				: undefined,
+			{ error: failure.code, error_description: failure.message },
+			nextNonce ? { [DPOP_NONCE_HEADER]: nextNonce } : undefined,
 		),
 		endpointUrl,
 		{ dpopSigningAlgorithms: resolveDpopSigningAlgorithms(ctx, options) },
@@ -90,25 +81,6 @@ async function throwDpopError(
 			Pragma: "no-cache",
 			...Object.fromEntries(new Headers(challenge?.headers)),
 		},
-	);
-}
-
-/**
- * Sends the next DPoP nonce on this response and any error thrown after it
- * (RFC 9449 §8.2), uncached and readable by cross-origin wallets.
- */
-async function setNextDpopNonce(
-	ctx: GenericEndpointContext,
-	nonce: DpopNonceOptions,
-) {
-	ctx.setHeader("Cache-Control", "no-store");
-	ctx.setHeader(DPOP_NONCE_HEADER, await createDpopNonce(nonce));
-	ctx.setHeader(
-		"Access-Control-Expose-Headers",
-		withExposedHeaders(
-			ctx.responseHeaders?.get("access-control-expose-headers"),
-			DPOP_NONCE_HEADER,
-		),
 	);
 }
 
@@ -187,13 +159,10 @@ export async function requireCredentialAccessToken(
 	const nonce = resolveDpopNonce(ctx);
 	const dpopBound = !!getDpopJktFromPayload(tokenPayload);
 	if (options.dpop?.required && !dpopBound) {
-		await throwDpopError(
-			ctx,
-			options,
-			endpointUrl,
-			{ code: "invalid_token", message: "DPoP-bound access token required" },
-			nonce,
-		);
+		await throwDpopError(ctx, options, endpointUrl, {
+			code: "invalid_token",
+			message: "DPoP-bound access token required",
+		});
 	}
 	try {
 		await enforceDpopBinding({
@@ -209,12 +178,13 @@ export async function requireCredentialAccessToken(
 		});
 	} catch (error) {
 		if (isDpopBindingError(error)) {
-			await throwDpopError(ctx, options, endpointUrl, error, nonce);
+			await throwDpopError(ctx, options, endpointUrl, error);
 		}
 		throw error;
 	}
-	if (nonce && dpopBound) {
-		await setNextDpopNonce(ctx, nonce);
+	if (dpopBound) {
+		// RFC 9449 §8.2: the next nonce, sent when nonces are required.
+		await getProviderApi(ctx).issueDpopNonce();
 	}
 
 	if (options.accessTokenValidator && ctx.request) {
