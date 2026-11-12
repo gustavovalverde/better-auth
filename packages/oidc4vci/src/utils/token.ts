@@ -11,7 +11,7 @@ import { APIError } from "better-auth/api";
  * codes, `c_nonce`, credential identifiers, transaction ids) is keyed by the
  * provider's own token hash so it follows the provider's `storeTokens` policy.
  */
-function getProviderApi(ctx: GenericEndpointContext): OAuthProviderApi {
+export function getProviderApi(ctx: GenericEndpointContext): OAuthProviderApi {
 	const provider = ctx.context.getPlugin("oauth-provider");
 	if (!provider) {
 		throw new APIError("INTERNAL_SERVER_ERROR", {
