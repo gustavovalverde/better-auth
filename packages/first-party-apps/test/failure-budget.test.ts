@@ -1,5 +1,8 @@
 import { twoFactor } from "better-auth/plugins";
 import { describe, expect, it } from "vitest";
+import type { FirstPartyMethod } from "../src";
+import { passwordMethod } from "../src";
+import { getBudgetKey } from "../src/failure-budget";
 import type { FpaServer } from "./fpa-server";
 import { createFpaServer, TEST_EMAIL, TEST_PASSWORD } from "./fpa-server";
 
@@ -111,9 +114,11 @@ describe("first-party apps - failure budget (C1)", async () => {
 			[wrong, wrong, wrong],
 			hint,
 		);
-		const ghost = (await budgetRows(server)).filter(
-			(row) => new Date(row.resetAt) > new Date(),
-		);
+		const ctx = await server.auth.$context;
+		const key = await getBudgetKey({ context: ctx } as never, "password", {
+			loginHint: hint,
+		});
+		const ghost = (await budgetRows(server)).filter((row) => row.key === key);
 		expect(ghost.map((row) => row.failures)).toEqual([4]);
 	});
 
@@ -124,6 +129,50 @@ describe("first-party apps - failure budget (C1)", async () => {
 		expect(serialized).not.toContain(TEST_EMAIL);
 		expect(serialized).not.toContain("ghost@example.com");
 		expect(serialized).not.toContain(user!.user.id);
+	});
+});
+
+describe("first-party apps - failure budget under concurrent responses", async () => {
+	// The test instance hashes passwords synchronously, which hides races that
+	// production's scrypt opens, so `respond` waits before checking.
+	const password = passwordMethod();
+	const slowPassword: FirstPartyMethod = {
+		...password,
+		async respond(input) {
+			await new Promise((resolve) => setTimeout(resolve, 30));
+			return password.respond(input);
+		},
+	};
+	const server = await createFpaServer({
+		plugin: { failureBudget: { maxFailures: 4, window: 900 } },
+		methods: [slowPassword],
+	});
+	const client = await server.createClient();
+
+	it("gives back the reserved failure when the credential is right", async () => {
+		await respondSequence(server, client.client_id, ["wrong-password"]);
+		const { final } = await server.signIn(client.client_id);
+		expect(final.status).toBe(200);
+		expect((await budgetRows(server)).map((row) => row.failures)).toEqual([1]);
+	});
+
+	it("checks no more credentials than the budget allows", async () => {
+		const handles: string[] = [];
+		for (let i = 0; i < 20; i++) {
+			const { res } = await server.startPassword(client.client_id);
+			handles.push(res.body.auth_session);
+		}
+		const replies = await Promise.all(
+			handles.map((handle) =>
+				server.challenge({ auth_session: handle, password: "wrong-password" }),
+			),
+		);
+		expect(
+			replies.every((reply) => reply.body.error === "authentication_failed"),
+		).toBe(true);
+		expect((await budgetRows(server)).map((row) => row.failures)).toEqual([4]);
+		const { final } = await server.signIn(client.client_id);
+		expect(final.body.error).toBe("authentication_failed");
 	});
 });
 

@@ -36,8 +36,8 @@ import {
 } from "./error-codes";
 import {
 	getBudgetKey,
-	isBudgetLocked,
-	recordBudgetFailure,
+	releaseBudgetFailure,
+	reserveBudgetFailure,
 } from "./failure-budget";
 import type {
 	FirstPartyAuthorizationDecision,
@@ -171,6 +171,11 @@ interface Exchange {
 	body: Body;
 	/** Whether this request's client was authenticated. */
 	clientVerified: boolean;
+	/**
+	 * The budget key holding this request's reserved failure, until a failed
+	 * response spends it. Any other outcome gives it back.
+	 */
+	budgetReservation: string | null;
 }
 
 /** The 200 response (draft §5.2.1). Every other answer is thrown. */
@@ -212,6 +217,7 @@ export function createAuthorizeChallengeEndpoint(
 				provider: getOAuthProviderApi(ctx, oauthOptions, "authorization_code"),
 				body: ctx.body,
 				clientVerified: false,
+				budgetReservation: null,
 			};
 			const response =
 				ctx.body.auth_session === undefined
@@ -367,16 +373,47 @@ async function methodResponse(
 	method: FirstPartyMethod,
 	live: LiveSession | null,
 ): Promise<CodeResponse> {
-	const { ctx, options, body } = ex;
+	const { ctx, options } = ex;
 	const sealed = await openMethodState(ctx, row.methodState);
 	if (!sealed) {
 		await deleteAuthSession(ctx, row.id);
 		invalidSession();
 	}
 	const budgetKey = await rowBudgetKey(ctx, method, row, sealed);
-	const locked = await isBudgetLocked(ctx, options, budgetKey);
 	await claim(ex, row);
+	const locked =
+		budgetKey !== null &&
+		!(await reserveBudgetFailure(ctx, options, budgetKey));
+	ex.budgetReservation = locked ? null : budgetKey;
+	try {
+		return await answerMethod(
+			ex,
+			row,
+			handle,
+			client,
+			method,
+			live,
+			sealed,
+			locked,
+		);
+	} finally {
+		if (ex.budgetReservation) {
+			await releaseBudgetFailure(ctx, options, ex.budgetReservation);
+		}
+	}
+}
 
+async function answerMethod(
+	ex: Exchange,
+	row: FirstPartyAuthSession,
+	handle: string,
+	client: FirstPartyClient,
+	method: FirstPartyMethod,
+	live: LiveSession | null,
+	sealed: MethodState,
+	locked: boolean,
+): Promise<CodeResponse> {
+	const { ctx, body } = ex;
 	let result: FirstPartyMethodRespondResult = await method.respond({
 		ctx,
 		client,
@@ -395,7 +432,7 @@ async function methodResponse(
 	// C1: a locked account's answers all count as failures on the row, so its
 	// responses look the same whether the credential was right or wrong.
 	if (locked && result.type !== "challenge") {
-		return failedResponse(ex, row, handle, client, method, sealed, null);
+		return failedResponse(ex, row, handle, client, method, sealed);
 	}
 	switch (result.type) {
 		case "challenge":
@@ -408,7 +445,7 @@ async function methodResponse(
 			});
 			return challenge(handle, method, result.challenge);
 		case "failed":
-			return failedResponse(ex, row, handle, client, method, sealed, budgetKey);
+			return failedResponse(ex, row, handle, client, method, sealed);
 		case "redirect_to_web":
 			await verify(ex, row);
 			await leaveMethod(ctx, row);
@@ -433,11 +470,11 @@ async function failedResponse(
 	client: FirstPartyClient,
 	method: FirstPartyMethod,
 	sealed: MethodState,
-	budgetKey: string | null,
 ): Promise<CodeResponse> {
 	const { ctx, options } = ex;
 	await verify(ex, row);
-	await recordBudgetFailure(ctx, options, budgetKey);
+	// The verified failure keeps the budget slot its request reserved.
+	ex.budgetReservation = null;
 	const failures = row.failures + 1;
 	if (failures >= options.authSession.maxFailures) {
 		await endAuthSession(ctx, row);
@@ -495,7 +532,7 @@ async function authenticatedResponse(
 	)) as (User & Record<string, unknown>) | null;
 	if (!user) {
 		const sealed = (await openMethodState(ctx, row.methodState))!;
-		return failedResponse(ex, row, handle, client, method, sealed, null);
+		return failedResponse(ex, row, handle, client, method, sealed);
 	}
 	// The two-factor plugin verifies second factors only against its own
 	// browser cookie, so an enrolled user finishes in the browser.

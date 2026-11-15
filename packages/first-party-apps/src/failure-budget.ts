@@ -27,58 +27,82 @@ export async function getBudgetKey(
 	);
 }
 
-export async function isBudgetLocked(
+/**
+ * Counts one failure before the method checks the credential, so requests
+ * that run concurrently cannot check more credentials than the budget allows.
+ * Returns false, and counts nothing, when the account is locked. A response
+ * that turns out not to fail gives its failure back with `releaseBudgetFailure`.
+ */
+export async function reserveBudgetFailure(
 	ctx: GenericEndpointContext,
 	options: ResolvedFirstPartyAppsOptions,
-	key: string | null,
+	key: string,
 ): Promise<boolean> {
-	if (!options.failureBudget || !key) return false;
-	const budget = await ctx.context.adapter.findOne<FirstPartyFailureBudget>({
-		model: BUDGET_MODEL,
-		where: [{ field: "key", value: key }],
-	});
-	return (
-		!!budget &&
-		new Date(budget.resetAt) > new Date() &&
-		budget.failures >= options.failureBudget.maxFailures
-	);
-}
-
-/** Counts one failure. A success never resets the window. */
-export async function recordBudgetFailure(
-	ctx: GenericEndpointContext,
-	options: ResolvedFirstPartyAppsOptions,
-	key: string | null,
-): Promise<void> {
-	if (!options.failureBudget || !key) return;
-	const now = new Date();
-	const resetAt = new Date(now.getTime() + options.failureBudget.window * 1000);
+	if (!options.failureBudget) return true;
+	const { maxFailures, window } = options.failureBudget;
 	const { adapter } = ctx.context;
-	const budget = await adapter.findOne<FirstPartyFailureBudget>({
-		model: BUDGET_MODEL,
-		where: [{ field: "key", value: key }],
-	});
-	if (!budget) {
-		try {
-			await adapter.create({
-				model: BUDGET_MODEL,
-				data: { key, failures: 1, resetAt },
-			});
-			return;
-		} catch {
-			// A concurrent failure created the row first; count on it below.
-		}
-	} else if (new Date(budget.resetAt) <= now) {
-		await adapter.update({
+	for (let attempt = 0; attempt < 3; attempt++) {
+		const now = new Date();
+		const reserved = await adapter.incrementOne({
+			model: BUDGET_MODEL,
+			where: [
+				{ field: "key", value: key },
+				{ field: "resetAt", operator: "gt", value: now },
+				{ field: "failures", operator: "lt", value: maxFailures },
+			],
+			increment: { failures: 1 },
+		});
+		if (reserved) return true;
+		const budget = await adapter.findOne<FirstPartyFailureBudget>({
 			model: BUDGET_MODEL,
 			where: [{ field: "key", value: key }],
-			update: { failures: 1, resetAt },
 		});
-		return;
+		const resetAt = new Date(now.getTime() + window * 1000);
+		if (!budget) {
+			try {
+				await adapter.create({
+					model: BUDGET_MODEL,
+					data: { key, failures: 1, resetAt },
+				});
+				return true;
+			} catch {
+				// A concurrent request created the row first.
+				continue;
+			}
+		}
+		if (new Date(budget.resetAt) > now) {
+			if (budget.failures >= maxFailures) return false;
+			continue;
+		}
+		// The window passed. Only one of the requests that saw it pass restarts it.
+		const restarted = await adapter.incrementOne({
+			model: BUDGET_MODEL,
+			where: [
+				{ field: "key", value: key },
+				{ field: "resetAt", operator: "lte", value: now },
+				{ field: "failures", value: budget.failures },
+			],
+			increment: { failures: 1 - budget.failures },
+			set: { resetAt },
+		});
+		if (restarted) return true;
 	}
-	await adapter.incrementOne({
+	return false;
+}
+
+/** Gives back a failure `reserveBudgetFailure` counted for a response that did not fail. */
+export async function releaseBudgetFailure(
+	ctx: GenericEndpointContext,
+	options: ResolvedFirstPartyAppsOptions,
+	key: string,
+): Promise<void> {
+	if (!options.failureBudget) return;
+	await ctx.context.adapter.incrementOne({
 		model: BUDGET_MODEL,
-		where: [{ field: "key", value: key }],
-		increment: { failures: 1 },
+		where: [
+			{ field: "key", value: key },
+			{ field: "failures", operator: "gt", value: 0 },
+		],
+		increment: { failures: -1 },
 	});
 }

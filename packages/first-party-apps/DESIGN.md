@@ -489,14 +489,16 @@ Follow-ups may carry authorization request parameters only on rows without a met
 
 A retry after `insufficient_authorization` (no new parameters) reuses the stored request as it is, including a PKCE challenge that no code has used yet.
 
-**Method response.** The plugin checks the failure budget's lock, claims the row, calls `method.respond`, and then:
+**Method response.** The plugin claims the row, reserves one failure on the account budget, calls `method.respond`, and then:
 
 | Result | Plugin behavior |
 | --- | --- |
 | `challenge` | Store the new state, and answer 403 `insufficient_authorization` with the new challenge. |
 | `authenticated` | If the account is locked, answer as for `failed`. Otherwise check two-factor enrollment, run the policy with `fresh: true`, and continue as in [Issuing the code](#issuing-the-code). |
 | `redirect_to_web` | If the account is locked, answer as for `failed`. Otherwise end a pending row, and answer 403 `redirect_to_web`. |
-| `failed` | Count the failure on the row and, unless the account is locked, on the budget. At `maxFailures` the plugin ends the row and answers 403 `redirect_to_web`. Otherwise it calls the method's `start` again (see [Methods](#methods)) and answers 400 `authentication_failed` with `auth_session` and the fresh challenge. |
+| `failed` | Count the failure on the row and, unless the account is locked, keep the reserved failure on the budget. At `maxFailures` the plugin ends the row and answers 403 `redirect_to_web`. Otherwise it calls the method's `start` again (see [Methods](#methods)) and answers 400 `authentication_failed` with `auth_session` and the fresh challenge. |
+
+The reservation is atomic: it succeeds only while the budget has room, and a request whose reservation fails treats the account as locked. Every outcome other than a verified failure gives the reserved failure back. Concurrent responses across `auth_session`s therefore cannot check more credentials than the budget allows, even when `respond` yields, as scrypt hashing does.
 
 A locked account (C1) still runs `respond`, so its timing does not change. Every final result for it, right or wrong, then counts as a failure on the row and leaves the account budget as it is. The third response in an `auth_session` therefore answers `redirect_to_web` the same way for correct and wrong credentials, so a correct credential followed by two wrong ones cannot be told apart from three wrong ones, and the user still reaches the browser.
 
@@ -617,7 +619,7 @@ Four limits apply (C1, draft §9.3):
 
 The budget key is HMAC-SHA-256, keyed by the auth secret, over the method id and one subject per row. The subject is the user id when the method's `start` named an account (or the flow started from a user, as in step-up), and otherwise the lowercased and trimmed `login_hint`. The row decides the subject once, and the plugin uses the same key for counting and for the lock check, so a method that resolves accounts in `start`, as `passwordMethod()` does, counts every spelling of an address against one account. Unknown and known accounts lock after the same number of failures, and the table holds no identifier in the clear. A flow with neither an account nor a hint, such as a discoverable passkey, has no budget key and relies on the per-row limits.
 
-Only failed responses count, and a success does not reset the window. A locked account answers `authentication_failed` even for a correct credential, and its responses count on the row but not on the budget, so a guesser cannot tell a lock from a wrong guess.
+Only failed responses count, and a success does not reset the window. Each response reserves its failure before `respond` runs and keeps it only when the response fails, so concurrent responses never check more credentials than the budget allows. A locked account answers `authentication_failed` even for a correct credential, and its responses count on the row but not on the budget, so a guesser cannot tell a lock from a wrong guess.
 
 There is no per-client limit. A public `client_id` is known to everyone, so a per-client counter would let one caller block every user of the app. The per-account budget limits guessing without that effect.
 
@@ -801,6 +803,7 @@ Tests use `getTestInstance()` with `jwt()`, `oauthProvider()`, and `firstPartyAp
 - Failures across `auth_session`s, under two spellings of one address, lock the account. A correct password then answers `authentication_failed`.
 - On a locked account, a correct credential followed by two wrong ones, three wrong ones, and three correct ones all answer `authentication_failed`, `authentication_failed`, `redirect_to_web`.
 - A locked account's responses do not count on the budget.
+- Twenty concurrent wrong responses for one account, through a method whose `respond` yields, count four failures against a budget of four, and a correct password then answers `authentication_failed`. A correct password gives back its reserved failure.
 - The lock ends after the window.
 - An unknown email locks after the same number of failures.
 - No budget row contains the email or the user id.
