@@ -25,6 +25,9 @@
       "path": "./packages/cimd/tsconfig.json"
     },
     {
+      "path": "./packages/first-party-apps/tsconfig.json"
+    },
+    {
       "path": "./packages/haip/tsconfig.json"
     },
     {

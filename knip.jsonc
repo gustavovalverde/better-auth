@@ -66,6 +66,9 @@
 			// neverBundle externals: referenced in bundled output, not in source
 			"ignoreDependencies": ["@better-fetch/fetch", "better-call"]
 		},
+		"packages/first-party-apps": {
+			"project": ["src/**/*.ts!", "test/**/*.ts"]
+		},
 		"packages/haip": {
 			"project": ["src/**/*.ts!", "test/**/*.ts"]
 		},
