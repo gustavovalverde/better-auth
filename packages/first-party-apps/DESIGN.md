@@ -269,7 +269,7 @@ type FirstPartyAuthorizationDecision =
 | Decision | Plugin behavior |
 | --- | --- |
 | nothing | Issue the code. |
-| `insufficient_authorization` | Keep the user authenticated (creating the session after a fresh authentication), and answer 403 `insufficient_authorization` with `auth_session` and `fields`, without `challenge_type`. The client can resolve the condition elsewhere and present the `auth_session` again. |
+| `insufficient_authorization` | Keep the user authenticated (creating the session after a fresh authentication), and answer 403 `insufficient_authorization` with `auth_session` and `fields`, without `challenge_type`. The client can resolve the condition elsewhere and present the `auth_session` again. A fresh authentication satisfies the request's `prompt` and `max_age`, so the plugin removes them from the stored request, and the retry issues on that session. |
 | `reauthenticate` | Run a method for the user again through `start({ user })`. With no method available, answer `redirect_to_web` with the re-authentication hints. After a fresh authentication, the plugin treats it as `redirect_to_web`, so the policy cannot loop. |
 | `redirect_to_web` | Answer 403 `redirect_to_web`. |
 
@@ -811,6 +811,7 @@ Tests use `getTestInstance()` with `jwt()`, `oauthProvider()`, and `firstPartyAp
 **Policy** (`policy.test.ts`)
 
 - `insufficient_authorization` answers 403 with `auth_session` and sanitized `fields` and description, and leaves an authenticated row. Retries after the condition changes issue codes on the same session, with the same `sid` and `auth_time` in the ID tokens.
+- After a fresh sign-in with `prompt=login` or `max_age=0` that the policy postponed, the retry issues a code on that sign-in's session without another challenge.
 - `reauthenticate` on re-entry challenges the user again, and success creates a new session.
 - `reauthenticate` after a fresh sign-in answers `redirect_to_web`.
 - `redirect_to_web` answers 403 with the description.

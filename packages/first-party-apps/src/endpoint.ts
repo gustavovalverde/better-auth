@@ -562,11 +562,13 @@ async function authenticatedResponse(
 	if (decision?.type === "insufficient_authorization") {
 		await verify(ex, row);
 		const session = await createFlowSession(ex, row, client, user, method, amr);
-		await updateAuthSession(
-			ctx,
-			row.id,
-			authenticatedUpdate(options, row, session, amr),
-		);
+		// This sign-in satisfied `prompt` and `max_age`, so the retry issues on
+		// its session instead of asking for the credential again.
+		const { prompt: _prompt, max_age: _maxAge, ...retry } = request;
+		await updateAuthSession(ctx, row.id, {
+			...authenticatedUpdate(options, row, session, amr),
+			request: JSON.stringify(retry),
+		});
 		return insufficientAuthorization(handle, decision);
 	}
 	const session = await createFlowSession(ex, row, client, user, method, amr);

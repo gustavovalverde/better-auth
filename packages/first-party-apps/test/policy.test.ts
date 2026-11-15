@@ -92,6 +92,29 @@ describe("first-party apps - authorization policy", async () => {
 		).toBe(row?.sessionId);
 	});
 
+	it.each<Record<string, string>>([{ prompt: "login" }, { max_age: "0" }])(
+		"issues on the postponed sign-in's session for %o",
+		async (extra) => {
+			decision = { type: "insufficient_authorization" };
+			const dpop = await createDpopKey();
+			const sessionsBefore = (await server.sessionRows()).length;
+			const { final, handle } = await server.signIn(client.client_id, {
+				dpop,
+				extra,
+			});
+			expect(final.status).toBe(403);
+			expect(final.body.error).toBe("insufficient_authorization");
+			const row = await server.findRow(handle);
+
+			decision = undefined;
+			const { res } = await present(handle, dpop);
+			expect(res.status).toBe(200);
+			expect(res.body.authorization_code).toEqual(expect.any(String));
+			expect((await server.findRow(handle))?.sessionId).toBe(row?.sessionId);
+			expect((await server.sessionRows()).length).toBe(sessionsBefore + 1);
+		},
+	);
+
 	it("challenges the user again for reauthenticate and creates a new session", async () => {
 		decision = undefined;
 		const dpop = await createDpopKey();
