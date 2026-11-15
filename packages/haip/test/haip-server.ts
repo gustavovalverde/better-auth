@@ -16,7 +16,7 @@ import {
 	SignJWT,
 } from "jose";
 import type { HaipOptions } from "../src";
-import { createParResolver, haip } from "../src";
+import { haip } from "../src";
 import { requireApi } from "./api-helpers";
 
 // The test server runs on http://localhost; @openid4vc requires https URLs
@@ -115,7 +115,7 @@ export async function createHaipServer(input?: {
 				enforcePerClientResources: false,
 				resources: [AUTH_BASE_URL, CREDENTIAL_URL],
 				grantTypes: ["authorization_code", "client_credentials", PRE_AUTH],
-				requestUriResolver: createParResolver(),
+				pushedAuthorizationRequests: { enabled: true, required: true },
 				dpop: { signingAlgorithms: ["ES256"] },
 				silenceWarnings: { oauthAuthServerConfig: true, openidConfig: true },
 			}),

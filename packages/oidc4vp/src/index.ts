@@ -6,7 +6,7 @@ import {
 } from "@openid4vc/openid4vp";
 import { SDJwtVcInstance } from "@sd-jwt/sd-jwt-vc";
 import type { BetterAuthPlugin } from "better-auth";
-import { APIError, createAuthEndpoint } from "better-auth/api";
+import { APIError, createAuthEndpoint, isAPIError } from "better-auth/api";
 import type { JWK } from "jose";
 import {
 	calculateJwkThumbprint,
@@ -391,15 +391,14 @@ async function verifyPresentations(
 				}),
 			);
 		} catch (error) {
-			const message =
-				error instanceof APIError
-					? String(
-							(error.body as { error_description?: unknown })
-								?.error_description ?? error.message,
-						)
-					: error instanceof Error
-						? error.message
-						: "verification failed";
+			const message = isAPIError(error)
+				? String(
+						(error.body as { error_description?: unknown })
+							?.error_description ?? error.message,
+					)
+				: error instanceof Error
+					? error.message
+					: "verification failed";
 			errors.push({ index, message });
 		}
 	}

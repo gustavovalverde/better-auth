@@ -1,12 +1,8 @@
-import {
-	extendOAuthProvider,
-	getOAuthProviderApi,
-} from "@better-auth/oauth-provider";
+import { extendOAuthProvider } from "@better-auth/oauth-provider";
 import type { BetterAuthPlugin } from "better-auth";
 import { APIError, createAuthEndpoint } from "better-auth/api";
 import * as z from "zod";
 import { HAIP_DPOP_SIGNING_ALGORITHMS } from "./dpop";
-import { findRegisteredRedirectUri, storePushedRequest } from "./par";
 import { schema } from "./schema";
 import type { HaipOptions } from "./types";
 import { createVpSession, getVpRequestObject } from "./vp-request";
@@ -36,7 +32,6 @@ export type { JarmDecryptionResult, JarmHandlerOptions } from "./jarm";
 export { createJarmHandler } from "./jarm";
 export type { KeyAttestationOptions } from "./key-attestation";
 export { createKeyAttestationValidator } from "./key-attestation";
-export { createParResolver } from "./par";
 export { schema } from "./schema";
 export type { TrustedIssuer } from "./trust";
 export type { Awaitable, HaipOptions } from "./types";
@@ -55,7 +50,6 @@ export {
 export { computeX509Hash, createX5cHeaders } from "./x5c";
 
 const REQUIRED_PEER_PLUGINS = ["oauth-provider", "jwt", "oidc4vci"] as const;
-const PAR_PATH = "/oauth2/par";
 const CHALLENGE_PATH = "/oauth2/attestation-challenge";
 const REQUEST_OBJECT_PATH = "/haip/vp/request-object";
 
@@ -81,6 +75,16 @@ export function haip(options?: HaipOptions) {
 					);
 				}
 			}
+			// HAIP §4.1 requires PAR. The provider serves it, so it must be enabled
+			// there, where its endpoint and rate limit are configured.
+			if (
+				!ctx.getPlugin("oauth-provider")?.options.pushedAuthorizationRequests
+					?.enabled
+			) {
+				throw new Error(
+					"@better-auth/haip requires pushed authorization requests. Set `pushedAuthorizationRequests: { enabled: true, required: true }` in oauthProvider().",
+				);
+			}
 
 			// HAIP's DPoP profile for the credential endpoints: bound tokens and
 			// ES256 proofs, unless the oidc4vci plugin sets its own policy.
@@ -95,8 +99,6 @@ export function haip(options?: HaipOptions) {
 
 			extendOAuthProvider(ctx, {
 				metadata: ({ ctx: endpointCtx }) => ({
-					pushed_authorization_request_endpoint: `${endpointCtx.context.baseURL}${PAR_PATH}`,
-					require_pushed_authorization_requests: options?.requirePar ?? true,
 					authorization_details_types_supported: ["openid_credential"],
 					...(walletAttestation
 						? {
@@ -121,98 +123,6 @@ export function haip(options?: HaipOptions) {
 			});
 		},
 		endpoints: {
-			/**
-			 * Pushed Authorization Request endpoint (RFC 9126). The client
-			 * authenticates as at the token endpoint; the pushed parameters are
-			 * validated against the client before a `request_uri` is issued.
-			 */
-			haipPar: createAuthEndpoint(
-				PAR_PATH,
-				{
-					method: "POST",
-					cloneRequest: true,
-					body: z
-						.object({
-							client_id: z.string(),
-							response_type: z.string(),
-							redirect_uri: z.string(),
-							scope: z.string().optional(),
-							state: z.string().optional(),
-							code_challenge: z.string().optional(),
-							code_challenge_method: z.string().optional(),
-							nonce: z.string().optional(),
-							authorization_details: z.string().optional(),
-						})
-						.catchall(z.string()),
-					metadata: {
-						noStore: true,
-						allowedMediaTypes: [
-							"application/x-www-form-urlencoded",
-							"application/json",
-						],
-					},
-				},
-				async (ctx) => {
-					const { client_id } = ctx.body;
-					const provider = ctx.context.getPlugin("oauth-provider");
-					if (!provider) {
-						throw new APIError("BAD_REQUEST", {
-							error: "invalid_client",
-							error_description:
-								"@better-auth/haip requires the oauth-provider plugin",
-						});
-					}
-					const providerApi = getOAuthProviderApi(
-						ctx,
-						provider.options,
-						"authorization_code",
-					);
-					const requestedScopes = ctx.body.scope?.split(" ").filter(Boolean);
-					const authenticated = await providerApi.authenticateClient({
-						requireCredentials: false,
-						scopes: requestedScopes,
-					});
-					if (authenticated.clientId !== client_id) {
-						throw new APIError("BAD_REQUEST", {
-							error: "invalid_client",
-							error_description:
-								"authenticated client does not match client_id",
-						});
-					}
-					if (ctx.body.request_uri !== undefined) {
-						throw new APIError("BAD_REQUEST", {
-							error: "invalid_request",
-							error_description:
-								"request_uri is not allowed at the PAR endpoint",
-						});
-					}
-					if (ctx.body.response_type !== "code") {
-						throw new APIError("BAD_REQUEST", {
-							error: "unsupported_response_type",
-							error_description: "unsupported response type",
-						});
-					}
-					if (
-						!findRegisteredRedirectUri(
-							authenticated.client.redirectUris,
-							ctx.body.redirect_uri,
-						)
-					) {
-						throw new APIError("BAD_REQUEST", {
-							error: "invalid_request",
-							error_description: "invalid redirect_uri",
-						});
-					}
-					const pushedRequest = await storePushedRequest(
-						ctx,
-						client_id,
-						ctx.body,
-						options?.parExpiresInSeconds ?? 60,
-					);
-					ctx.setStatus(201);
-					return ctx.json(pushedRequest);
-				},
-			),
 			/**
 			 * Creates a VP request: a session plus a signed request object
 			 * (HAIP §5.1) that wallets fetch from `request_uri`. Server-only,
@@ -298,8 +208,7 @@ export function haip(options?: HaipOptions) {
 		},
 		rateLimit: [
 			{
-				pathMatcher: (path: string) =>
-					path === PAR_PATH || path === CHALLENGE_PATH,
+				pathMatcher: (path: string) => path === CHALLENGE_PATH,
 				window: 60,
 				max: 30,
 			},

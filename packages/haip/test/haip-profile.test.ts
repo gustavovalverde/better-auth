@@ -1,3 +1,6 @@
+import { oauthProvider } from "@better-auth/oauth-provider";
+import { oidc4vci } from "@better-auth/oidc4vci";
+import { jwt } from "better-auth/plugins/jwt";
 import { getTestInstance } from "better-auth/test";
 import { decodeJwt, decodeProtectedHeader } from "jose";
 import { describe, expect, it } from "vitest";
@@ -15,6 +18,22 @@ describe("haip - plugin setup", () => {
 		await expect(
 			getTestInstance({ baseURL: "http://localhost:3000", plugins: [haip()] }),
 		).rejects.toThrow('@better-auth/haip requires the "oauth-provider" plugin');
+	});
+
+	it("requires pushed authorization requests on the provider", async () => {
+		await expect(
+			getTestInstance({
+				baseURL: "http://localhost:3000",
+				plugins: [
+					jwt(),
+					oauthProvider({ loginPage: "/login", consentPage: "/consent" }),
+					oidc4vci({ credentialConfigurations: [{ id: "c", vct: "v" }] }),
+					haip(),
+				],
+			}),
+		).rejects.toThrow(
+			"@better-auth/haip requires pushed authorization requests",
+		);
 	});
 
 	it("requires trusted issuers for wallet attestation", () => {
@@ -108,17 +127,5 @@ describe("haip - profile", async () => {
 			leafCert,
 			caCert,
 		]);
-	});
-});
-
-describe("haip - requirePar option", async () => {
-	const server = await createHaipServer({ haip: { requirePar: false } });
-
-	it("advertises require_pushed_authorization_requests false", async () => {
-		const metadata = (await server.auth.api.getOAuthServerConfig()) as Record<
-			string,
-			unknown
-		>;
-		expect(metadata.require_pushed_authorization_requests).toBe(false);
 	});
 });

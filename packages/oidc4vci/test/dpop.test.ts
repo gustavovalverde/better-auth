@@ -205,7 +205,7 @@ describe("oidc4vci - DPoP nonces", async () => {
 		expect(res.status).toBe(401);
 		expect((await res.json()).error).toBe("use_dpop_nonce");
 		expect(res.headers.get("www-authenticate")).toMatch(
-			/^DPoP error="use_dpop_nonce", error_description="[^"]+", algs="/,
+			/^DPoP error="use_dpop_nonce", error_description="[^"]+", resource_metadata="[^"]+", algs="/,
 		);
 		expect(res.headers.get("cache-control")).toContain("no-store");
 		expect(res.headers.get("access-control-expose-headers")).toContain(

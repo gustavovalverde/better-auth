@@ -5,12 +5,6 @@ export type Awaitable<T> = T | Promise<T>;
 
 export type HaipOptions = {
 	/**
-	 * Advertise `require_pushed_authorization_requests`.
-	 *
-	 * @default true
-	 */
-	requirePar?: boolean;
-	/**
 	 * Require DPoP-bound access tokens at the oidc4vci credential endpoints.
 	 * Applied to the oidc4vci plugin unless it configures `dpop` itself.
 	 *
@@ -24,12 +18,6 @@ export type HaipOptions = {
 	 * @default ["ES256"]
 	 */
 	dpopSigningAlgorithms?: string[];
-	/**
-	 * PAR request_uri lifetime in seconds.
-	 *
-	 * @default 60
-	 */
-	parExpiresInSeconds?: number;
 	/**
 	 * VP request object lifetime in seconds.
 	 *

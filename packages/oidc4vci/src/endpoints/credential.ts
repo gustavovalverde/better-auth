@@ -1,5 +1,5 @@
 import type { GenericEndpointContext } from "@better-auth/core";
-import { APIError, createAuthEndpoint } from "better-auth/api";
+import { APIError, createAuthEndpoint, isAPIError } from "better-auth/api";
 import type { JWK } from "jose";
 import { decodeProtectedHeader, importJWK, jwtVerify } from "jose";
 import * as z from "zod";
@@ -171,7 +171,7 @@ async function resolveHolderBinding(
 			extraCnf: result.extraCnf,
 		};
 	} catch (error) {
-		if (error instanceof APIError) throw error;
+		if (isAPIError(error)) throw error;
 		throwOidc4vciCredentialError(
 			"invalid_proof",
 			error instanceof Error ? error.message : "invalid proof",
