@@ -1,8 +1,7 @@
-import { APIError } from "better-auth/api";
 import { symmetricDecrypt } from "better-auth/crypto";
 import type { JwtOptions } from "better-auth/plugins";
 import { createJwk } from "better-auth/plugins";
-import type { JSONWebKeySet, JWTPayload } from "jose";
+import type { JWTPayload } from "jose";
 import { importJWK, SignJWT } from "jose";
 import type { JwkRecord } from "../types";
 
@@ -104,44 +103,4 @@ async function getLatestSigningKey(
 			});
 	if (!keys?.length) return null;
 	return keys.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0]!;
-}
-
-export async function getLocalJwks(
-	ctx: {
-		context: {
-			adapter: {
-				findMany: <T>(args: { model: string }) => Promise<T[]>;
-			};
-		};
-	},
-	jwtPlugin: {
-		options?: JwtOptions;
-	},
-): Promise<JSONWebKeySet> {
-	const keySets = await ctx.context.adapter.findMany<{
-		id: string;
-		publicKey: string;
-		alg?: string | null;
-		crv?: string | null;
-	}>({ model: "jwks" });
-
-	if (!keySets.length) {
-		throw new APIError("INTERNAL_SERVER_ERROR", {
-			message: "no jwks keys available",
-		});
-	}
-
-	const keyPairConfig = jwtPlugin.options?.jwks?.keyPairConfig;
-	const defaultAlg = keyPairConfig?.alg ?? "EdDSA";
-	const defaultCrv =
-		keyPairConfig && "crv" in keyPairConfig ? keyPairConfig.crv : undefined;
-
-	return {
-		keys: keySets.map((keySet) => ({
-			...JSON.parse(keySet.publicKey),
-			kid: keySet.id,
-			alg: keySet.alg ?? defaultAlg,
-			...(keySet.crv || defaultCrv ? { crv: keySet.crv ?? defaultCrv } : {}),
-		})),
-	} satisfies JSONWebKeySet;
 }

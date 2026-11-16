@@ -34,6 +34,7 @@ export type TestAuth = {
 		| "createCredentialOffer"
 		| "getCredentialIssuerMetadata"
 		| "getJwks"
+		| "signJWT"
 		| "signUpEmail"
 		| "updateCredentialStatus",
 		(input?: any) => Promise<any>
@@ -112,11 +113,15 @@ export async function createJwtProof(input: {
 	return { proofJwt: await builder.sign(holder.privateKey), jwk, holder };
 }
 
+export const PAIRWISE_SECRET = "test-pairwise-secret-key-32chars!!";
+
 export async function createIssuer(overrides?: {
 	dpop?: OAuthOptions["dpop"];
 	jwt?: JwtOptions;
 	oidc4vci?: Partial<Oidc4vciOptions>;
 	plugins?: BetterAuthOptions["plugins"];
+	/** Pairwise access-token subjects, for wallets created with `pairwise`. */
+	pairwise?: boolean;
 }) {
 	const authOptions = {
 		baseURL: BASE_URL,
@@ -138,6 +143,12 @@ export async function createIssuer(overrides?: {
 					openidConfig: true,
 				},
 				...(overrides?.dpop ? { dpop: overrides.dpop } : {}),
+				...(overrides?.pairwise
+					? {
+							pairwiseSecret: PAIRWISE_SECRET,
+							accessTokenSubject: "pairwise" as const,
+						}
+					: {}),
 			}),
 			oidc4vci({
 				credentialConfigurations: [
@@ -156,7 +167,10 @@ export async function createIssuer(overrides?: {
 		"createCredentialOffer",
 	] as const);
 
-	async function createWalletClient(headers: Headers) {
+	async function createWalletClient(
+		headers: Headers,
+		options?: { pairwise?: boolean },
+	) {
 		const client = await api.adminCreateOAuthClient({
 			headers,
 			body: {
@@ -164,6 +178,7 @@ export async function createIssuer(overrides?: {
 				token_endpoint_auth_method: "none",
 				grant_types: ["authorization_code", PRE_AUTH_GRANT_TYPE],
 				skip_consent: true,
+				...(options?.pairwise ? { subject_type: "pairwise" as const } : {}),
 			},
 		});
 		return client.client_id;
@@ -286,9 +301,12 @@ export async function createIssuer(overrides?: {
 	async function issueAccessToken(options?: {
 		dpop?: DpopKey;
 		offer?: Record<string, unknown>;
+		pairwise?: boolean;
 	}) {
 		const session = await instance.signInWithTestUser();
-		const clientId = await createWalletClient(session.headers);
+		const clientId = await createWalletClient(session.headers, {
+			pairwise: options?.pairwise,
+		});
 		const { code } = await createOffer(session.headers, {
 			client_id: clientId,
 			credential_configuration_id: CONFIG_ID,

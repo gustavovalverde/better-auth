@@ -44,11 +44,12 @@ export function createDeferredCredentialEndpoint(options: Oidc4vciOptions) {
 				throw new APIError("NOT_FOUND");
 			}
 
-			const { tokenPayload, subject } = await requireCredentialAccessToken(
-				ctx,
-				options,
-				resolveDeferredEndpoint(ctx, options),
-			);
+			const { tokenPayload, userId, clientId } =
+				await requireCredentialAccessToken(
+					ctx,
+					options,
+					resolveDeferredEndpoint(ctx, options),
+				);
 			const requestBody = ctx.body;
 
 			try {
@@ -90,14 +91,12 @@ export function createDeferredCredentialEndpoint(options: Oidc4vciOptions) {
 			} catch {
 				invalidTransaction();
 			}
-			const azp =
-				typeof tokenPayload.azp === "string" ? tokenPayload.azp : undefined;
 			if (
 				value.type !== VERIFICATION_TYPES.DEFERRED_CREDENTIAL ||
 				typeof value.credentialConfigurationId !== "string" ||
 				!value.jwk ||
-				(value.userId && value.userId !== subject) ||
-				(value.clientId && azp && value.clientId !== azp)
+				(value.userId && value.userId !== userId) ||
+				(value.clientId && clientId && value.clientId !== clientId)
 			) {
 				invalidTransaction();
 			}
@@ -131,8 +130,8 @@ export function createDeferredCredentialEndpoint(options: Oidc4vciOptions) {
 			if (typeof options.deferredIssuance?.isReady === "function") {
 				const ready = await options.deferredIssuance.isReady({
 					credentialConfigurationId: cfg.id,
-					userId: subject,
-					clientId: azp,
+					userId,
+					clientId,
 				});
 				if (!ready) {
 					ctx.setStatus(202);
@@ -143,7 +142,7 @@ export function createDeferredCredentialEndpoint(options: Oidc4vciOptions) {
 				}
 			}
 
-			const user = await ctx.context.internalAdapter.findUserById(subject);
+			const user = await ctx.context.internalAdapter.findUserById(userId);
 			if (!user) {
 				throw new APIError("BAD_REQUEST", { message: "user not found" });
 			}

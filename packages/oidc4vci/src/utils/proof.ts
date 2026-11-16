@@ -1,28 +1,11 @@
 import type { GenericEndpointContext } from "@better-auth/core";
-import type {
-	AccessTokenAuthorization,
-	DpopBindingErrorCode,
-	DpopNonceOptions,
-} from "@better-auth/core/oauth2";
-import {
-	createDpopReplayStore,
-	DPOP_NONCE_HEADER,
-	enforceDpopBinding,
-	getDpopJktFromPayload,
-	isDpopBindingError,
-	parseAccessTokenAuthorization,
-	verifyJwsAccessToken,
-} from "@better-auth/core/oauth2";
+import { getDpopJktFromPayload } from "@better-auth/core/oauth2";
 import { createResourceServerChallenge } from "@better-auth/oauth-provider";
 import { APIError } from "better-auth/api";
-import type { JWTPayload } from "jose";
+import { decodeProtectedHeader } from "jose";
 import { throwBearerTokenError } from "../error";
 import type { Oidc4vciOptions } from "../types";
-import { getLocalJwks } from "./jwt";
-import {
-	resolveCredentialEndpoint,
-	resolveCredentialIssuer,
-} from "./resolvers";
+import { resolveCredentialEndpoint } from "./resolvers";
 import { getProviderApi } from "./token";
 
 function resolveDpopSigningAlgorithms(
@@ -34,42 +17,18 @@ function resolveDpopSigningAlgorithms(
 	return provider?.options.dpop?.signingAlgorithms;
 }
 
-/**
- * The oauth-provider's DPoP nonce settings, keyed from the auth secret as its
- * token endpoint's are. The credential endpoints run in the same instance, so
- * they require nonces when it does and accept the nonces it issues.
- */
-function resolveDpopNonce(
-	ctx: GenericEndpointContext,
-): DpopNonceOptions | undefined {
-	const nonce = ctx.context.getPlugin("oauth-provider")?.options.dpop?.nonce;
-	if (!nonce?.required) return undefined;
-	return {
-		secret: ctx.context.secret,
-		...(nonce.expiresIn !== undefined ? { expiresIn: nonce.expiresIn } : {}),
-	};
-}
-
-/**
- * Refuses a DPoP-bound request with the RFC 9449 §7.1 `DPoP` challenge. A
- * `use_dpop_nonce` refusal also carries the nonce to retry with (§9).
- */
-async function throwDpopError(
+/** Refuses a request with the RFC 9449 §7.1 `DPoP` challenge. */
+function throwDpopError(
 	ctx: GenericEndpointContext,
 	options: Oidc4vciOptions,
 	endpointUrl: string,
-	failure: { code: DpopBindingErrorCode; message: string },
-): Promise<never> {
-	const nextNonce =
-		failure.code === "use_dpop_nonce"
-			? await getProviderApi(ctx).issueDpopNonce()
-			: undefined;
+	failure: { code: "invalid_token" | "invalid_dpop_proof"; message: string },
+): never {
 	const challenge = createResourceServerChallenge(
-		new APIError(
-			"UNAUTHORIZED",
-			{ error: failure.code, error_description: failure.message },
-			nextNonce ? { [DPOP_NONCE_HEADER]: nextNonce } : undefined,
-		),
+		new APIError("UNAUTHORIZED", {
+			error: failure.code,
+			error_description: failure.message,
+		}),
 		endpointUrl,
 		{ dpopSigningAlgorithms: resolveDpopSigningAlgorithms(ctx, options) },
 	);
@@ -84,107 +43,66 @@ async function throwDpopError(
 	);
 }
 
+function dpopProofAlgorithm(ctx: GenericEndpointContext) {
+	const proof = ctx.headers?.get("dpop");
+	if (!proof) return undefined;
+	try {
+		return decodeProtectedHeader(proof).alg;
+	} catch {
+		return undefined;
+	}
+}
+
 /**
- * Authenticates a credential-endpoint request: verifies the JWT access token
- * for this Credential Issuer, then enforces its sender constraint (RFC 9449
- * §7) with Better Auth core's DPoP verification, a database-backed replay
- * store, the endpoint URL the wallet signs as `htu`, and a server-provided
- * nonce when the oauth-provider requires them.
+ * Authenticates a credential-endpoint request through the oauth-provider's
+ * `verifyResourceRequest`, which checks the access token's signature,
+ * audience, client, revocation, and DPoP binding with the provider's nonce
+ * policy, and returns the user id in `sub` even when the token's own `sub` is
+ * pairwise. The plugin's DPoP options can only narrow the provider's: they
+ * require a bound token and limit the proof algorithms.
  */
 export async function requireCredentialAccessToken(
 	ctx: GenericEndpointContext,
 	options: Oidc4vciOptions,
 	endpointUrl: string,
 ) {
-	const headerAuthorization = parseAccessTokenAuthorization(
-		ctx.headers?.get("authorization"),
-	);
-	const body = ctx.body as Record<string, unknown> | undefined;
-	const bodyToken =
-		options.allowAccessTokenInBody && typeof body?.access_token === "string"
-			? body.access_token
-			: undefined;
-	const authorization: AccessTokenAuthorization | undefined =
-		headerAuthorization?.token
-			? headerAuthorization
-			: bodyToken
-				? { scheme: "Bearer", token: bodyToken }
-				: undefined;
-	if (!authorization?.token) {
-		throwBearerTokenError({
-			status: "UNAUTHORIZED",
-			error: "invalid_token",
-			errorDescription: "missing access token",
-		});
-	}
-	if (authorization.scheme === "Unknown") {
-		throwBearerTokenError({
-			status: "UNAUTHORIZED",
-			error: "invalid_token",
-			errorDescription: "authorization scheme must be Bearer or DPoP",
-		});
-	}
+	const tokenPayload = await getProviderApi(ctx).verifyResourceRequest({
+		audience:
+			options.accessTokenAudience ??
+			options.credentialAudience ??
+			resolveCredentialEndpoint(ctx, options),
+	});
 
-	const jwtPlugin = ctx.context.getPlugin("jwt");
-	if (!jwtPlugin) {
-		throw new APIError("INTERNAL_SERVER_ERROR", {
-			message: "jwt plugin is required",
-		});
-	}
-
-	const issuer =
-		options.accessTokenIssuer ?? resolveCredentialIssuer(ctx, options);
-	const audience =
-		options.accessTokenAudience ??
-		options.credentialAudience ??
-		resolveCredentialEndpoint(ctx, options);
-
-	const tokenPayload: JWTPayload | null = await verifyJwsAccessToken(
-		authorization.token,
-		{
-			jwksFetch:
-				options.accessTokenJwksUrl ??
-				(async () => await getLocalJwks(ctx, jwtPlugin)),
-			verifyOptions: { audience, issuer },
-		},
-	).catch(() => null);
-	if (!tokenPayload) {
-		throwBearerTokenError({
-			status: "UNAUTHORIZED",
-			error: "invalid_token",
-			errorDescription: "invalid access token",
-		});
-	}
-
-	const nonce = resolveDpopNonce(ctx);
 	const dpopBound = !!getDpopJktFromPayload(tokenPayload);
 	if (options.dpop?.required && !dpopBound) {
-		await throwDpopError(ctx, options, endpointUrl, {
+		throwDpopError(ctx, options, endpointUrl, {
 			code: "invalid_token",
 			message: "DPoP-bound access token required",
 		});
 	}
-	try {
-		await enforceDpopBinding({
-			payload: tokenPayload,
-			authorization,
-			proofJwt: ctx.headers?.get("dpop"),
-			method: ctx.request?.method ?? "POST",
-			url: endpointUrl,
-			replayStore: createDpopReplayStore(ctx.context.internalAdapter),
-			signingAlgorithms: resolveDpopSigningAlgorithms(ctx, options),
-			proofMaxAgeSeconds: options.dpop?.proofMaxAgeSeconds,
-			nonce,
-		});
-	} catch (error) {
-		if (isDpopBindingError(error)) {
-			await throwDpopError(ctx, options, endpointUrl, error);
+	const algorithms = options.dpop?.signingAlgorithms;
+	if (dpopBound && algorithms) {
+		const alg = dpopProofAlgorithm(ctx);
+		if (!alg || !algorithms.includes(alg)) {
+			throwDpopError(ctx, options, endpointUrl, {
+				code: "invalid_dpop_proof",
+				message: "DPoP proof algorithm is not allowed",
+			});
 		}
-		throw error;
 	}
-	if (dpopBound) {
-		// RFC 9449 §8.2: the next nonce, sent when nonces are required.
-		await getProviderApi(ctx).issueDpopNonce();
+
+	const clientId =
+		typeof tokenPayload.client_id === "string"
+			? tokenPayload.client_id
+			: undefined;
+	const userId = tokenPayload.sub;
+	// A token issued without a user names its client in `sub`.
+	if (typeof userId !== "string" || !userId || userId === clientId) {
+		throwBearerTokenError({
+			status: "UNAUTHORIZED",
+			error: "invalid_token",
+			errorDescription: "access token does not name a user",
+		});
 	}
 
 	if (options.accessTokenValidator && ctx.request) {
@@ -194,14 +112,5 @@ export async function requireCredentialAccessToken(
 		});
 	}
 
-	const subject = tokenPayload.sub;
-	if (!subject || typeof subject !== "string") {
-		throwBearerTokenError({
-			status: "UNAUTHORIZED",
-			error: "invalid_token",
-			errorDescription: "token missing sub",
-		});
-	}
-
-	return { tokenPayload, subject };
+	return { tokenPayload, userId, clientId };
 }

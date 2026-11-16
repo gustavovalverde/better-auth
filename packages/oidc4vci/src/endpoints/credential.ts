@@ -217,14 +217,13 @@ export function createCredentialEndpoint(options: Oidc4vciOptions) {
 			metadata: { noStore: true },
 		},
 		async (ctx) => {
-			const { tokenPayload, subject } = await requireCredentialAccessToken(
-				ctx,
-				options,
-				resolveCredentialEndpoint(ctx, options),
-			);
+			const { tokenPayload, userId, clientId } =
+				await requireCredentialAccessToken(
+					ctx,
+					options,
+					resolveCredentialEndpoint(ctx, options),
+				);
 			const requestBody = ctx.body;
-			const azp =
-				typeof tokenPayload.azp === "string" ? tokenPayload.azp : undefined;
 
 			if (requestBody.format !== undefined) {
 				throwOidc4vciCredentialError(
@@ -267,8 +266,8 @@ export function createCredentialEndpoint(options: Oidc4vciOptions) {
 					verification.expiresAt <= new Date() ||
 					value?.type !== VERIFICATION_TYPES.CREDENTIAL_IDENTIFIER ||
 					typeof value.credentialConfigurationId !== "string" ||
-					(value.userId && value.userId !== subject) ||
-					(value.clientId && azp && value.clientId !== azp)
+					(value.userId && value.userId !== userId) ||
+					(value.clientId && clientId && value.clientId !== clientId)
 				) {
 					throwOidc4vciCredentialError(
 						"unknown_credential_identifier",
@@ -332,12 +331,12 @@ export function createCredentialEndpoint(options: Oidc4vciOptions) {
 
 			const binding = await resolveHolderBinding(options, requestBody, {
 				audience: resolveCredentialIssuer(ctx, options),
-				userId: subject,
-				clientId: azp,
+				userId,
+				clientId,
 			});
 			const nonceIdentifier = await checkNonce(ctx, binding.cNonce);
 
-			const user = await ctx.context.internalAdapter.findUserById(subject);
+			const user = await ctx.context.internalAdapter.findUserById(userId);
 			if (!user) {
 				throw new APIError("BAD_REQUEST", { message: "user not found" });
 			}
@@ -372,8 +371,8 @@ export function createCredentialEndpoint(options: Oidc4vciOptions) {
 				typeof shouldDefer === "function" &&
 				(await shouldDefer({
 					credentialConfigurationId: cfg.id,
-					userId: subject,
-					clientId: azp,
+					userId,
+					clientId,
 				}))
 			) {
 				const now = new Date();
@@ -386,8 +385,8 @@ export function createCredentialEndpoint(options: Oidc4vciOptions) {
 					),
 					value: JSON.stringify({
 						type: VERIFICATION_TYPES.DEFERRED_CREDENTIAL,
-						userId: subject,
-						clientId: azp,
+						userId,
+						clientId,
 						credentialConfigurationId: cfg.id,
 						credentialIdentifier:
 							typeof credentialIdentifier === "string"

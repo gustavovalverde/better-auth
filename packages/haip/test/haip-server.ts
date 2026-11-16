@@ -1,4 +1,5 @@
 import type { AuthContext, BetterAuthOptions } from "@better-auth/core";
+import type { OAuthOptions } from "@better-auth/oauth-provider";
 import { oauthProvider } from "@better-auth/oauth-provider";
 import type { Oidc4vciOptions } from "@better-auth/oidc4vci";
 import { oidc4vci } from "@better-auth/oidc4vci";
@@ -101,6 +102,7 @@ export async function createJwtProof(nonce: string) {
 
 export async function createHaipServer(input?: {
 	haip?: HaipOptions;
+	dpop?: OAuthOptions["dpop"];
 	oidc4vci?: Partial<Oidc4vciOptions>;
 	oidc4vp?: Partial<Oidc4vpOptions>;
 }) {
@@ -116,7 +118,7 @@ export async function createHaipServer(input?: {
 				resources: [AUTH_BASE_URL, CREDENTIAL_URL],
 				grantTypes: ["authorization_code", "client_credentials", PRE_AUTH],
 				pushedAuthorizationRequests: { enabled: true, required: true },
-				dpop: { signingAlgorithms: ["ES256"] },
+				dpop: input?.dpop ?? { signingAlgorithms: ["ES256"] },
 				silenceWarnings: { oauthAuthServerConfig: true, openidConfig: true },
 			}),
 			oidc4vci({

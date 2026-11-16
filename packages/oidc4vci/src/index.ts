@@ -92,9 +92,9 @@ export function oidc4vci(options: Oidc4vciOptions) {
 			updateCredentialStatus: createUpdateCredentialStatusEndpoint(options),
 
 			/**
-			 * OID4VCI credential endpoint (§8). Requires a JWT access token for
-			 * this endpoint, its DPoP proof when the token is bound, and one proof
-			 * of possession bound to a `c_nonce`.
+			 * OID4VCI credential endpoint (§8). Requires an access token the
+			 * oauth-provider issued for this endpoint, its DPoP proof when the
+			 * token is bound, and one proof of possession bound to a `c_nonce`.
 			 */
 			credential: createCredentialEndpoint(options),
 

@@ -98,8 +98,9 @@ export type Oidc4vciOptions = {
 	/**
 	 * Base URL for issuer endpoints (credential, nonce, offer, status list).
 	 *
-	 * Use this when the issuer service is hosted separately from the OAuth AS.
-	 * Defaults to BetterAuth baseURL.
+	 * Defaults to BetterAuth baseURL. The oauth-provider checks a DPoP proof's
+	 * `htu` against its own base URL, so DPoP-bound credential requests need
+	 * the two to match.
 	 */
 	issuerBaseURL?: string;
 	/**
@@ -117,17 +118,9 @@ export type Oidc4vciOptions = {
 	 */
 	wellKnownAliases?: string[];
 	/**
-	 * Optional JWKS URL for validating access tokens when the issuer is separate
-	 * from the authorization server. Fetched with Better Auth's
-	 * redirect-refusing, cached JWKS loader.
-	 */
-	accessTokenJwksUrl?: string;
-	/**
-	 * Override access token issuer for JWT validation.
-	 */
-	accessTokenIssuer?: string;
-	/**
-	 * Override access token audience for JWT validation.
+	 * Audience the credential endpoints require of an access token. Defaults
+	 * to `credentialAudience`. It must be a resource registered with the
+	 * oauth-provider, which validates the token.
 	 */
 	accessTokenAudience?: string;
 	/**
@@ -186,7 +179,9 @@ export type Oidc4vciOptions = {
 		input: CredentialStatusAuthorizationInput,
 	) => Awaitable<boolean>;
 	/**
-	 * Access token audience used for the credential endpoint.
+	 * Access token audience used for the credential endpoint. Register it as
+	 * an oauth-provider resource: the provider refuses a token whose audience
+	 * it does not serve.
 	 *
 	 * Defaults to `${issuerBaseURL}/oidc4vci/credential` (issuerBaseURL defaults to BetterAuth baseURL).
 	 */
@@ -198,16 +193,10 @@ export type Oidc4vciOptions = {
 	 */
 	credentialExpiresInSeconds?: number;
 	/**
-	 * If enabled, the credential endpoint accepts an `access_token` in the
-	 * request body when the Authorization header isn't available. Body tokens
-	 * are treated as bearer tokens, so DPoP-bound tokens cannot use it.
-	 */
-	allowAccessTokenInBody?: boolean;
-	/**
 	 * DPoP (RFC 9449) policy for the credential and deferred credential
-	 * endpoints. A DPoP-bound access token is always checked for a valid proof.
-	 * When the oauth-provider requires DPoP nonces (`dpop.nonce.required`),
-	 * the proof must also carry one, and responses send the next nonce.
+	 * endpoints. The oauth-provider verifies every DPoP-bound access token's
+	 * proof with its own `dpop` settings (algorithms, proof age, and nonces),
+	 * so these options only narrow that policy.
 	 */
 	dpop?: {
 		/**
@@ -217,12 +206,11 @@ export type Oidc4vciOptions = {
 		 */
 		required?: boolean;
 		/**
-		 * JWS algorithms accepted for DPoP proofs. Defaults to the
-		 * oauth-provider `dpop.signingAlgorithms`, else Better Auth core's list.
+		 * JWS algorithms these endpoints accept for DPoP proofs, a subset of
+		 * the oauth-provider's `dpop.signingAlgorithms`. Defaults to the
+		 * provider's list.
 		 */
 		signingAlgorithms?: readonly string[];
-		/** Maximum DPoP proof age in seconds. */
-		proofMaxAgeSeconds?: number;
 	};
 	/**
 	 * Maximum age of a `jwt` proof, measured from its `iat`.
@@ -312,8 +300,11 @@ export type Oidc4vciOptions = {
 		credentialConfigurationId: string;
 	}) => Awaitable<Record<string, unknown>>;
 	/**
-	 * Additional access token checks, run after JWT verification and DPoP
-	 * enforcement. Throw to reject the request.
+	 * Additional access token checks, run after the oauth-provider validated
+	 * the token and its DPoP proof. `tokenPayload` is the provider's RFC 7662
+	 * introspection form: `active`, `client_id`, and the user id in `sub`,
+	 * even when the token's own `sub` is pairwise. Throw to reject the
+	 * request.
 	 */
 	accessTokenValidator?: (input: {
 		request: Request;

@@ -8,8 +8,12 @@ import { createX5cHeaders, haip } from "../src";
 import {
 	AUTH_BASE_URL,
 	CONFIG_ID,
+	createDpopKey,
+	createDpopProof,
 	createHaipServer,
 	createJwtProof,
+	PRE_AUTH,
+	TOKEN_URL,
 } from "./haip-server";
 import { caCert, leafCert } from "./x509-fixtures";
 
@@ -127,5 +131,46 @@ describe("haip - profile", async () => {
 			leafCert,
 			caCert,
 		]);
+	});
+});
+
+describe("haip - DPoP algorithms at the credential endpoint", async () => {
+	// The provider accepts EdDSA proofs; HAIP's profile narrows the credential
+	// endpoints to ES256 even though the provider verifies the proof.
+	const server = await createHaipServer({
+		dpop: { signingAlgorithms: ["ES256", "EdDSA"] },
+	});
+
+	it("refuses a DPoP proof that is not ES256", async () => {
+		const { headers } = await server.signInWithTestUser();
+		const client = await server.createClient(headers);
+		const code = await server.createOffer(headers, client.client_id);
+		const dpop = await createDpopKey("EdDSA");
+		const tokenRes = await server.postForm(
+			TOKEN_URL,
+			{
+				grant_type: PRE_AUTH,
+				"pre-authorized_code": code,
+				client_id: client.client_id,
+			},
+			{ dpop: await createDpopProof(dpop, { url: TOKEN_URL }) },
+		);
+		expect(tokenRes.status).toBe(200);
+		const { access_token } = (await tokenRes.json()) as {
+			access_token: string;
+		};
+
+		const { proofJwt } = await createJwtProof(await server.nonce());
+		const res = await server.requestCredential({
+			accessToken: access_token,
+			dpop,
+			body: {
+				credential_configuration_id: CONFIG_ID,
+				proofs: { jwt: [proofJwt] },
+			},
+		});
+		expect(res.status).toBe(401);
+		expect((await res.json()).error).toBe("invalid_dpop_proof");
+		expect(res.headers.get("www-authenticate")).toContain('algs="ES256"');
 	});
 });
