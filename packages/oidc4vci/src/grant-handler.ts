@@ -103,7 +103,9 @@ export function createPreAuthorizedCodeHandler(): OAuthExtensionGrantHandler {
 		// The pre-authorized code binds the client. Authenticate the caller when
 		// it presents a client credential (public clients pass without a
 		// secret); otherwise this is anonymous access (OID4VCI 1.0 §6.1) and the
-		// code's own client is used.
+		// code's own client is used. Anonymous access is open only to a public
+		// client: a client issued credentials must authenticate at the token
+		// endpoint (RFC 6749 §3.2.1), so its code is no bearer secret.
 		const hasClientCredential =
 			Boolean(body.client_id) ||
 			Boolean(ctx.request?.headers.get("authorization")) ||
@@ -125,6 +127,12 @@ export function createPreAuthorizedCodeHandler(): OAuthExtensionGrantHandler {
 				throw new APIError("BAD_REQUEST", {
 					error_description: "client_id is required",
 					error: "invalid_request",
+				});
+			}
+			if (resolved.tokenEndpointAuthMethod !== "none") {
+				throw new APIError("BAD_REQUEST", {
+					error_description: "client authentication is required",
+					error: "invalid_client",
 				});
 			}
 			// authenticateClient enforces these for an identified client.

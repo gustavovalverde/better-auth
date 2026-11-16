@@ -184,6 +184,19 @@ export async function createIssuer(overrides?: {
 		return client.client_id;
 	}
 
+	async function createConfidentialWalletClient(headers: Headers) {
+		const client = await api.adminCreateOAuthClient({
+			headers,
+			body: {
+				redirect_uris: ["https://wallet.example/cb"],
+				token_endpoint_auth_method: "client_secret_basic",
+				grant_types: ["authorization_code", PRE_AUTH_GRANT_TYPE],
+				skip_consent: true,
+			},
+		});
+		return { clientId: client.client_id, clientSecret: client.client_secret! };
+	}
+
 	async function createOffer(headers: Headers, body: Record<string, unknown>) {
 		const offer = await api.createCredentialOffer({
 			headers,
@@ -203,6 +216,7 @@ export async function createIssuer(overrides?: {
 		txCode?: string;
 		resource?: string;
 		dpop?: DpopKey;
+		authorization?: string;
 	}) {
 		const form = new URLSearchParams({
 			grant_type: PRE_AUTH_GRANT_TYPE,
@@ -215,6 +229,9 @@ export async function createIssuer(overrides?: {
 			const headers = new Headers({
 				"content-type": "application/x-www-form-urlencoded",
 			});
+			if (input.authorization) {
+				headers.set("authorization", input.authorization);
+			}
 			if (input.dpop) {
 				headers.set(
 					"dpop",
@@ -325,6 +342,7 @@ export async function createIssuer(overrides?: {
 		customFetchImpl: customFetchImpl as typeof fetch,
 		signInWithTestUser: instance.signInWithTestUser,
 		signInWithUser: instance.signInWithUser,
+		createConfidentialWalletClient,
 		createWalletClient,
 		createOffer,
 		redeem,

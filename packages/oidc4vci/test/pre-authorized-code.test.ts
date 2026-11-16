@@ -100,6 +100,39 @@ describe("oidc4vci - pre-authorized code grant", async () => {
 		expect((await issuer.redeem({ code, clientId })).status).toBe(200);
 	});
 
+	it("redeems a public client's code without a client_id", async () => {
+		const { headers } = await issuer.signInWithTestUser();
+		const clientId = await issuer.createWalletClient(headers);
+		const { code } = await issuer.createOffer(headers, {
+			client_id: clientId,
+			credential_configuration_id: CONFIG_ID,
+		});
+
+		expect((await issuer.redeem({ code })).status).toBe(200);
+	});
+
+	it("requires a confidential client to authenticate to redeem its code", async () => {
+		const { headers } = await issuer.signInWithTestUser();
+		const { clientId, clientSecret } =
+			await issuer.createConfidentialWalletClient(headers);
+		const { code } = await issuer.createOffer(headers, {
+			client_id: clientId,
+			credential_configuration_id: CONFIG_ID,
+		});
+
+		const anonymous = await issuer.redeem({ code });
+		expect(anonymous.status).toBe(400);
+		expect((await anonymous.json()).error).toBe("invalid_client");
+		const withoutSecret = await issuer.redeem({ code, clientId });
+		expect((await withoutSecret.json()).error).toBe("invalid_client");
+
+		const authenticated = await issuer.redeem({
+			code,
+			authorization: `Basic ${btoa(`${clientId}:${clientSecret}`)}`,
+		});
+		expect(authenticated.status).toBe(200);
+	});
+
 	it("rejects a resource other than the credential endpoint", async () => {
 		const { headers } = await issuer.signInWithTestUser();
 		const clientId = await issuer.createWalletClient(headers);
