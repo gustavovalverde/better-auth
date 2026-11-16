@@ -25,7 +25,11 @@ export type HolderBinding = {
 
 /**
  * Issues one SD-JWT VC bound to the holder key (`cnf.jwk`, as SD-JWT VC and
- * HAIP expect), allocates its status list entry, and records it.
+ * HAIP expect), allocates its status list entry, and records it. The
+ * credential carries no `sub`: SD-JWT VC makes it optional and needs no
+ * binding between `sub` and `cnf`, and any identifier in it would let the
+ * verifiers it reaches link the holder. `resolveClaims` may return an
+ * issuer-assigned `sub` when a deployment needs one.
  */
 export async function issueCredential(
 	ctx: GenericEndpointContext,
@@ -33,13 +37,12 @@ export async function issueCredential(
 	input: {
 		cfg: CredentialConfiguration;
 		user: User;
-		subject: string;
 		binding: HolderBinding;
 		authorizationDetails: Record<string, unknown>[];
 		credentialIdentifier?: string;
 	},
 ) {
-	const { cfg, user, subject, binding } = input;
+	const { cfg, user, binding } = input;
 	const jwtPlugin = ctx.context.getPlugin("jwt");
 	if (!jwtPlugin) {
 		throw new APIError("INTERNAL_SERVER_ERROR", {
@@ -77,7 +80,6 @@ export async function issueCredential(
 	const payload = {
 		...claims,
 		iss: resolveCredentialIssuer(ctx, options),
-		sub: subject,
 		vct: cfg.vct,
 		iat: now,
 		exp: now + (options.credentialExpiresInSeconds ?? 31536000),

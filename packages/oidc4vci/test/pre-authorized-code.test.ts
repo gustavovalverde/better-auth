@@ -41,7 +41,8 @@ describe("oidc4vci - pre-authorized code grant", async () => {
 		const body = await res.json();
 		expect(body).not.toHaveProperty("c_nonce");
 		const credential = readCredential(body);
-		expect(decodeJwt(credential.split("~")[0]!).sub).toBe(user.id);
+		expect(decodeJwt(credential.split("~")[0]!)).not.toHaveProperty("sub");
+		expect(credential).not.toContain(user.id);
 	});
 
 	it("redeems a pre-authorized code once under concurrent requests", async () => {

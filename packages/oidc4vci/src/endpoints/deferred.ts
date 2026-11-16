@@ -158,7 +158,6 @@ export function createDeferredCredentialEndpoint(options: Oidc4vciOptions) {
 			const credential = await issueCredential(ctx, options, {
 				cfg,
 				user,
-				subject,
 				binding: { jwk: value.jwk, extraCnf: value.extraCnf },
 				authorizationDetails,
 				credentialIdentifier: value.credentialIdentifier,

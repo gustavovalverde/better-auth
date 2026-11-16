@@ -414,7 +414,6 @@ export function createCredentialEndpoint(options: Oidc4vciOptions) {
 			const credential = await issueCredential(ctx, options, {
 				cfg,
 				user,
-				subject,
 				binding,
 				authorizationDetails,
 				credentialIdentifier:

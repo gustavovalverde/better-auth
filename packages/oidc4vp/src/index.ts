@@ -35,6 +35,10 @@ export type VerifiedPresentation = {
 	credentialQueryId?: string;
 	format: string;
 	issuer?: string;
+	/**
+	 * The credential's `sub`, when its issuer includes one. Credentials from
+	 * `@better-auth/oidc4vci` carry none, so holder binding comes from `cnf`.
+	 */
 	subject?: string;
 	claims: Record<string, unknown>;
 	/** Whether a Key Binding JWT was verified against the credential's `cnf`. */
