@@ -16,11 +16,7 @@ import {
 	resolveRequestedClaims,
 } from "./utils/claims";
 import { getOrCreateSigningKey } from "./utils/jwt";
-import {
-	getStatusListUri,
-	resolveCredentialIssuer,
-	resolveStatusListOptions,
-} from "./utils/resolvers";
+import { getStatusListUri, resolveCredentialIssuer } from "./utils/resolvers";
 import { buildDisclosureFrame, issueSdJwtCredential } from "./utils/sd-jwt";
 
 export type HolderBinding = {
@@ -78,7 +74,6 @@ export async function issueCredential(
 	}
 
 	const format = cfg.format ?? "dc+sd-jwt";
-	const statusListId = resolveStatusListOptions(options).listId;
 	const entry = await createStatusListEntry(ctx, options, {
 		userId: user.id,
 		credentialConfigurationId: cfg.id,
@@ -94,7 +89,7 @@ export async function issueCredential(
 			requestedClaims,
 			status: {
 				idx: entry.statusListIndex,
-				uri: getStatusListUri(ctx, options, statusListId),
+				uri: getStatusListUri(ctx, options, entry.statusListId),
 			},
 		});
 	} catch (error) {

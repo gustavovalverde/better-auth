@@ -94,6 +94,7 @@ export const schema = {
 			createdAt: {
 				type: "date",
 				required: true,
+				index: true,
 			},
 		},
 		// One record per status list entry: a shared index would let revoking

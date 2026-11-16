@@ -15,8 +15,15 @@ const ENTRY_PAGE_SIZE = 1000;
 
 type StatusEntry = { statusListIndex: number; status: number };
 
-/** Random draws before allocation falls back to listing the free indices. */
+/**
+ * Random draws on one list before allocation treats it as crowded and moves
+ * to the next list. All of them land on taken indices once the list is
+ * roughly three quarters full.
+ */
 const RANDOM_INDEX_ATTEMPTS = 8;
+
+/** Lists one allocation tries before it gives up. */
+const LIST_ATTEMPTS = 4;
 
 /** A uniform random integer in `[0, size)`, without modulo bias. */
 function randomIndex(size: number) {
@@ -26,6 +33,35 @@ function randomIndex(size: number) {
 		crypto.getRandomValues(value);
 	} while (value[0]! >= limit);
 	return value[0]! % size;
+}
+
+/** The id of the `generation`th list: `listId`, then `listId-2`, `listId-3`. */
+function generationListId(listId: string, generation: number) {
+	return generation === 1 ? listId : `${listId}-${generation}`;
+}
+
+function parseGeneration(listId: string, statusListId: string) {
+	if (statusListId === listId) return 1;
+	const suffix = statusListId.startsWith(`${listId}-`)
+		? statusListId.slice(listId.length + 1)
+		: "";
+	const generation = /^[1-9]\d*$/.test(suffix) ? Number(suffix) : 0;
+	return generation >= 2 ? generation : 1;
+}
+
+/** The generation of the list the most recent credential went to. */
+async function findCurrentGeneration(
+	ctx: GenericEndpointContext,
+	listId: string,
+) {
+	const [latest] = await ctx.context.adapter.findMany<{
+		statusListId: string;
+	}>({
+		model: ISSUED_CREDENTIAL_MODEL,
+		sortBy: { field: "createdAt", direction: "desc" },
+		limit: 1,
+	});
+	return latest ? parseGeneration(listId, latest.statusListId) : 1;
 }
 
 async function isIndexAllocated(
@@ -43,31 +79,13 @@ async function isIndexAllocated(
 	return !!entry;
 }
 
-async function findAllocatedIndices(
-	ctx: GenericEndpointContext,
-	listId: string,
-) {
-	const indices = new Set<number>();
-	for (let offset = 0; ; offset += ENTRY_PAGE_SIZE) {
-		const page = await ctx.context.adapter.findMany<StatusEntry>({
-			model: ISSUED_CREDENTIAL_MODEL,
-			where: [{ field: "statusListId", value: listId }],
-			select: ["statusListIndex"],
-			sortBy: { field: "statusListIndex", direction: "asc" },
-			limit: ENTRY_PAGE_SIZE,
-			offset,
-		});
-		for (const entry of page) indices.add(entry.statusListIndex);
-		if (page.length < ENTRY_PAGE_SIZE) return indices;
-	}
-}
-
 /**
- * Records an issued credential at a random free index of its status list
- * and returns the record. HAIP 1.0 §6.1 requires a unique, unpredictable
- * index, so the index is drawn at random; the unique (list, index) index
- * refuses a second record for one entry, which would let revoking one
- * credential revoke another.
+ * Records an issued credential at a random free index of a status list and
+ * returns the record. HAIP 1.0 §6.1 requires a unique, unpredictable index,
+ * so the index is drawn at random; the unique (list, index) index refuses a
+ * second record for one entry, which would let revoking one credential
+ * revoke another. Once a list is crowded, credentials go to the next list,
+ * so issuance never runs out of indices.
  */
 export async function createStatusListEntry(
 	ctx: GenericEndpointContext,
@@ -79,16 +97,16 @@ export async function createStatusListEntry(
 	},
 ) {
 	const { listId, size } = resolveStatusListOptions(options);
-	const create = async (index: number) => {
+	const create = async (statusListId: string, index: number) => {
 		try {
 			return await ctx.context.adapter.create<
 				Record<string, unknown>,
-				{ id: string; statusListIndex: number }
+				{ id: string; statusListId: string; statusListIndex: number }
 			>({
 				model: ISSUED_CREDENTIAL_MODEL,
 				data: {
 					...data,
-					statusListId: listId,
+					statusListId,
 					statusListIndex: index,
 					status: 0,
 					createdAt: new Date(),
@@ -96,31 +114,24 @@ export async function createStatusListEntry(
 			});
 		} catch (error) {
 			// A concurrent issuance took the index first.
-			if (await isIndexAllocated(ctx, listId, index)) return null;
+			if (await isIndexAllocated(ctx, statusListId, index)) return null;
 			throw error;
 		}
 	};
 
-	for (let attempt = 0; attempt < RANDOM_INDEX_ATTEMPTS; attempt++) {
-		const index = randomIndex(size);
-		if (await isIndexAllocated(ctx, listId, index)) continue;
-		const entry = await create(index);
-		if (entry) return entry;
-	}
-	// A crowded list: draw from the indices still free.
-	for (let attempt = 0; attempt < RANDOM_INDEX_ATTEMPTS; attempt++) {
-		const allocated = await findAllocatedIndices(ctx, listId);
-		const free: number[] = [];
-		for (let index = 0; index < size; index++) {
-			if (!allocated.has(index)) free.push(index);
+	const firstGeneration = await findCurrentGeneration(ctx, listId);
+	for (let offset = 0; offset < LIST_ATTEMPTS; offset++) {
+		const statusListId = generationListId(listId, firstGeneration + offset);
+		for (let attempt = 0; attempt < RANDOM_INDEX_ATTEMPTS; attempt++) {
+			const index = randomIndex(size);
+			if (await isIndexAllocated(ctx, statusListId, index)) continue;
+			const entry = await create(statusListId, index);
+			if (entry) return entry;
 		}
-		if (!free.length) break;
-		const entry = await create(free[randomIndex(free.length)]!);
-		if (entry) return entry;
 	}
 	throw new APIError("INTERNAL_SERVER_ERROR", {
 		error: "server_error",
-		error_description: "the status list has no free index",
+		error_description: "no status list has a free index",
 	});
 }
 

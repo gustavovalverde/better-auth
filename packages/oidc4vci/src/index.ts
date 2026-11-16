@@ -1,5 +1,6 @@
 import { extendOAuthProvider } from "@better-auth/oauth-provider";
 import type { BetterAuthPlugin } from "better-auth";
+import { MAX_STATUS_LIST_SIZE } from "./constants";
 import { createCredentialEndpoint } from "./endpoints/credential";
 import { createDeferredCredentialEndpoint } from "./endpoints/deferred";
 import { createMetadataEndpoints } from "./endpoints/metadata";
@@ -35,10 +36,14 @@ export function oidc4vci(options: Oidc4vciOptions) {
 	const statusListSize = options.statusList?.size;
 	if (
 		statusListSize !== undefined &&
-		!(Number.isSafeInteger(statusListSize) && statusListSize > 0)
+		!(
+			Number.isSafeInteger(statusListSize) &&
+			statusListSize > 0 &&
+			statusListSize <= MAX_STATUS_LIST_SIZE
+		)
 	) {
 		throw new Error(
-			"@better-auth/oidc4vci: statusList.size must be a positive integer",
+			`@better-auth/oidc4vci: statusList.size must be an integer from 1 to ${MAX_STATUS_LIST_SIZE}`,
 		);
 	}
 	const { getCredentialIssuerMetadata, wellKnownAliasEndpoints } =

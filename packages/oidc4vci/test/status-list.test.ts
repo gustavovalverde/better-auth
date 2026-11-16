@@ -34,9 +34,10 @@ async function statusIndex(res: Response) {
 	return (payload.status as { status_list: { idx: number } }).status_list.idx;
 }
 
-async function fetchStatusList(issuer: Issuer) {
+async function fetchStatusList(issuer: Issuer, listId?: string) {
+	const query = listId ? `?list_id=${listId}` : "";
 	const res = await issuer.customFetchImpl(
-		`${AUTH_BASE_URL}/oidc4vci/status-list`,
+		`${AUTH_BASE_URL}/oidc4vci/status-list${query}`,
 		{ method: "GET" },
 	);
 	return getListFromStatusListJWT(await res.text());
@@ -68,61 +69,57 @@ describe("oidc4vci - status list indices", async () => {
 	});
 });
 
+async function statusReference(res: Response) {
+	expect(res.status).toBe(200);
+	const payload = decodeJwt(readCredential(await res.json()).split("~")[0]!);
+	return (payload.status as { status_list: { idx: number; uri: string } })
+		.status_list;
+}
+
 describe("oidc4vci - a crowded status list", async () => {
 	const issuer = await createIssuer({ oidc4vci: { statusList: { size: 8 } } });
 
-	it("gives every free index out once, then refuses", async () => {
+	it("moves issuance to a new list once the list is full", async () => {
 		const { user } = await issuer.signInWithTestUser();
 		const { adapter } = await issuer.auth.$context;
-		// Indices an earlier sequential allocation used.
-		for (const statusListIndex of [0, 1]) {
-			await adapter.create({
-				model: "oidc4vciIssuedCredential",
-				data: {
-					userId: user.id,
-					credentialConfigurationId: CONFIG_ID,
-					format: "dc+sd-jwt",
-					statusListId: "default",
-					statusListIndex,
-					status: 1,
-					createdAt: new Date(),
-				},
-			});
+		const entry = (statusListId: string, statusListIndex: number) => ({
+			model: "oidc4vciIssuedCredential",
+			data: {
+				userId: user.id,
+				credentialConfigurationId: "earlier_config",
+				format: "dc+sd-jwt",
+				statusListId,
+				statusListIndex,
+				status: statusListIndex < 2 ? 1 : 0,
+				createdAt: new Date(),
+			},
+		});
+		for (let index = 0; index < 8; index++) {
+			await adapter.create(entry("default", index));
 		}
 
 		const requests = [];
-		for (let i = 0; i < 7; i++) requests.push(await prepareRequest(issuer));
-		const responses = await Promise.all(
-			requests.slice(0, 6).map((request) => request.send()),
+		for (let i = 0; i < 3; i++) requests.push(await prepareRequest(issuer));
+		const references = await Promise.all(
+			(await Promise.all(requests.map((request) => request.send()))).map(
+				statusReference,
+			),
 		);
-		const indices = await Promise.all(responses.map(statusIndex));
-		expect(indices.sort()).toEqual([2, 3, 4, 5, 6, 7]);
+		const nextListUri = `${AUTH_BASE_URL}/oidc4vci/status-list?list_id=default-2`;
+		for (const reference of references) {
+			expect(reference.uri).toBe(nextListUri);
+			expect(reference.idx).toBeLessThan(8);
+		}
+		expect(new Set(references.map((reference) => reference.idx)).size).toBe(3);
 
-		const full = await requests[6]!.send();
-		expect(full.status).toBe(500);
-		expect(await full.json()).toMatchObject({
-			error: "server_error",
-			error_description: "the status list has no free index",
-		});
-
-		const list = await fetchStatusList(issuer);
-		expect([0, 1, 2, 3, 4, 5, 6, 7].map((i) => list.getStatus(i))).toEqual([
-			1, 1, 0, 0, 0, 0, 0, 0,
-		]);
+		// The full list still publishes its revoked entries.
+		const full = await fetchStatusList(issuer);
+		expect([0, 1, 2].map((i) => full.getStatus(i))).toEqual([1, 1, 0]);
+		const next = await fetchStatusList(issuer, "default-2");
+		expect(next.totalStatuses).toBe(8);
 		// The schema's unique index refuses a second record for one entry.
 		await expect(
-			adapter.create({
-				model: "oidc4vciIssuedCredential",
-				data: {
-					userId: user.id,
-					credentialConfigurationId: CONFIG_ID,
-					format: "dc+sd-jwt",
-					statusListId: "default",
-					statusListIndex: indices[0]!,
-					status: 0,
-					createdAt: new Date(),
-				},
-			}),
+			adapter.create(entry("default-2", references[0]!.idx)),
 		).rejects.toThrow();
 	});
 });
@@ -149,14 +146,20 @@ describe("oidc4vci - status list entries", async () => {
 		expect(records).toHaveLength(0);
 	});
 
-	it("rejects a status list size that is not a positive integer", () => {
-		for (const size of [0, -8, 1.5]) {
+	it("rejects a status list size that is not an integer from 1 to 2^20", () => {
+		for (const size of [0, -8, 1.5, 2 ** 20 + 1, 2 ** 33]) {
 			expect(() =>
 				oidc4vci({
 					credentialConfigurations: [{ id: CONFIG_ID, vct: "urn:x" }],
 					statusList: { size },
 				}),
-			).toThrow("statusList.size must be a positive integer");
+			).toThrow("statusList.size must be an integer from 1 to 1048576");
 		}
+		expect(() =>
+			oidc4vci({
+				credentialConfigurations: [{ id: CONFIG_ID, vct: "urn:x" }],
+				statusList: { size: 2 ** 20 },
+			}),
+		).not.toThrow();
 	});
 });

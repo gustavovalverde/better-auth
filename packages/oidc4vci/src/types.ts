@@ -240,12 +240,14 @@ export type Oidc4vciOptions = {
 		 */
 		ttlSeconds?: number;
 		/**
-		 * Number of entries in the status list. Each credential gets a random
-		 * free index in this range (HAIP 1.0 §6.1), and the published list
-		 * always has this many entries, so it reveals neither the order of
-		 * issuance nor how many credentials the list holds. Keep it well above
-		 * the number of credentials the list will hold: once it is over half
-		 * full, finding a free index takes longer.
+		 * Number of entries in each status list, at most 1048576 (2^20). Each
+		 * credential gets a random free index in this range (HAIP 1.0 §6.1),
+		 * and a published list always has this many entries, so it reveals
+		 * neither the order of issuance nor how many credentials the list
+		 * holds. Once random draws stop finding free indices in a list (around
+		 * three quarters full), credentials go to a new list, `<listId>-2`,
+		 * then `<listId>-3`, so a list's id reveals roughly when its
+		 * credentials were issued.
 		 *
 		 * @default 131072
 		 */
