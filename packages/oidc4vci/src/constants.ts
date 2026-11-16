@@ -19,6 +19,7 @@ export const SD_HASH_ALG = "sha-256";
 export const DEFAULT_STATUS_LIST_ID = "default";
 export const DEFAULT_STATUS_LIST_BITS = 1 as const;
 export const DEFAULT_STATUS_LIST_TTL_SECONDS = 3600;
+export const DEFAULT_STATUS_LIST_SIZE = 131072;
 
 export const WELL_KNOWN_CREDENTIAL_ISSUER_PATH =
 	"/.well-known/openid-credential-issuer";

@@ -1,10 +1,15 @@
 import type { GenericEndpointContext } from "@better-auth/core";
 import { APIError } from "better-auth/api";
+import type { JwtOptions } from "better-auth/plugins";
 import type { User } from "better-auth/types";
 import type { JWK } from "jose";
 import { throwOidc4vciCredentialError } from "./error";
-import { getNextStatusListIndex } from "./status-list";
-import type { CredentialConfiguration, Oidc4vciOptions } from "./types";
+import { createStatusListEntry } from "./status-list";
+import type {
+	CredentialConfiguration,
+	Oidc4vciCredentialFormat,
+	Oidc4vciOptions,
+} from "./types";
 import {
 	filterClaimsForRequest,
 	resolveClaimsForUser,
@@ -72,10 +77,50 @@ export async function issueCredential(
 		);
 	}
 
-	const statusListId = resolveStatusListOptions(options).listId;
-	const statusListIndex = await getNextStatusListIndex(ctx, statusListId);
-	const now = Math.floor(Date.now() / 1000);
 	const format = cfg.format ?? "dc+sd-jwt";
+	const statusListId = resolveStatusListOptions(options).listId;
+	const entry = await createStatusListEntry(ctx, options, {
+		userId: user.id,
+		credentialConfigurationId: cfg.id,
+		format,
+	});
+	try {
+		return await signCredential(ctx, options, {
+			cfg,
+			jwtOptions: jwtPlugin.options,
+			format,
+			claims,
+			binding,
+			requestedClaims,
+			status: {
+				idx: entry.statusListIndex,
+				uri: getStatusListUri(ctx, options, statusListId),
+			},
+		});
+	} catch (error) {
+		await ctx.context.adapter.delete({
+			model: "oidc4vciIssuedCredential",
+			where: [{ field: "id", value: entry.id }],
+		});
+		throw error;
+	}
+}
+
+async function signCredential(
+	ctx: GenericEndpointContext,
+	options: Oidc4vciOptions,
+	input: {
+		cfg: CredentialConfiguration;
+		jwtOptions: JwtOptions | undefined;
+		format: Oidc4vciCredentialFormat;
+		claims: Record<string, unknown>;
+		binding: HolderBinding;
+		requestedClaims: ReturnType<typeof resolveRequestedClaims>;
+		status: { idx: number; uri: string };
+	},
+) {
+	const { cfg, jwtOptions, format, claims, binding, requestedClaims } = input;
+	const now = Math.floor(Date.now() / 1000);
 	// Resolved claims come first so they can never replace the registered
 	// claims, holder binding, or status reference.
 	const payload = {
@@ -84,12 +129,7 @@ export async function issueCredential(
 		vct: cfg.vct,
 		iat: now,
 		exp: now + (options.credentialExpiresInSeconds ?? 31536000),
-		status: {
-			status_list: {
-				idx: statusListIndex,
-				uri: getStatusListUri(ctx, options, statusListId),
-			},
-		},
+		status: { status_list: input.status },
 		cnf: {
 			...binding.extraCnf,
 			jwk: binding.jwk,
@@ -97,7 +137,7 @@ export async function issueCredential(
 	};
 
 	const disclosureFrame = buildDisclosureFrame(cfg, payload, requestedClaims);
-	const { key, alg } = await getOrCreateSigningKey(ctx, jwtPlugin.options);
+	const { key, alg } = await getOrCreateSigningKey(ctx, jwtOptions);
 	const additionalHeaders = options.resolveCredentialHeaders
 		? await options.resolveCredentialHeaders({
 				kid: key.id,
@@ -106,27 +146,12 @@ export async function issueCredential(
 				credentialConfigurationId: cfg.id,
 			})
 		: undefined;
-	const credential = await issueSdJwtCredential(ctx, {
+	return issueSdJwtCredential(ctx, {
 		payload,
-		jwtOptions: jwtPlugin.options,
+		jwtOptions,
 		disclosureFrame,
 		format,
 		additionalHeaders,
 		credentialSigner: options.credentialSigner,
 	});
-
-	await ctx.context.adapter.create({
-		model: "oidc4vciIssuedCredential",
-		data: {
-			userId: user.id,
-			credentialConfigurationId: cfg.id,
-			format,
-			statusListId,
-			statusListIndex,
-			status: 0,
-			createdAt: new Date(),
-		},
-	});
-
-	return credential;
 }

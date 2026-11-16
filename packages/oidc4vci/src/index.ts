@@ -32,6 +32,15 @@ export { schema } from "./schema";
 export type * from "./types";
 
 export function oidc4vci(options: Oidc4vciOptions) {
+	const statusListSize = options.statusList?.size;
+	if (
+		statusListSize !== undefined &&
+		!(Number.isSafeInteger(statusListSize) && statusListSize > 0)
+	) {
+		throw new Error(
+			"@better-auth/oidc4vci: statusList.size must be a positive integer",
+		);
+	}
 	const { getCredentialIssuerMetadata, wellKnownAliasEndpoints } =
 		createMetadataEndpoints(options);
 

@@ -10,59 +10,119 @@ import {
 	resolveStatusListOptions,
 } from "./utils/resolvers";
 
-const STATUS_LIST_MODEL = "oidc4vciStatusList";
-
-type StatusListCounter = { id: string; listId: string; nextIndex: number };
-
-/**
- * Allocates the next status list index for a list.
- *
- * The index comes from an atomic increment of a per-list counter, so
- * concurrent issuances never share an index (sharing one would make revoking
- * one credential revoke the other).
- */
-export async function getNextStatusListIndex(
-	ctx: GenericEndpointContext,
-	statusListId: string,
-) {
-	const { adapter } = ctx.context;
-	const where = [{ field: "listId", value: statusListId }];
-	const existing = await adapter.findOne<StatusListCounter>({
-		model: STATUS_LIST_MODEL,
-		where,
-	});
-	if (!existing) {
-		try {
-			await adapter.create({
-				model: STATUS_LIST_MODEL,
-				data: { listId: statusListId, nextIndex: 0 },
-			});
-		} catch (error) {
-			// A concurrent issuance created the counter first.
-			const raced = await adapter.findOne<StatusListCounter>({
-				model: STATUS_LIST_MODEL,
-				where,
-			});
-			if (!raced) throw error;
-		}
-	}
-	const updated = await adapter.incrementOne<StatusListCounter>({
-		model: STATUS_LIST_MODEL,
-		where,
-		increment: { nextIndex: 1 },
-	});
-	if (!updated) {
-		throw new APIError("INTERNAL_SERVER_ERROR", {
-			message: "failed to allocate a status list index",
-		});
-	}
-	return updated.nextIndex - 1;
-}
-
 const ISSUED_CREDENTIAL_MODEL = "oidc4vciIssuedCredential";
 const ENTRY_PAGE_SIZE = 1000;
 
 type StatusEntry = { statusListIndex: number; status: number };
+
+/** Random draws before allocation falls back to listing the free indices. */
+const RANDOM_INDEX_ATTEMPTS = 8;
+
+/** A uniform random integer in `[0, size)`, without modulo bias. */
+function randomIndex(size: number) {
+	const limit = Math.floor(2 ** 32 / size) * size;
+	const value = new Uint32Array(1);
+	do {
+		crypto.getRandomValues(value);
+	} while (value[0]! >= limit);
+	return value[0]! % size;
+}
+
+async function isIndexAllocated(
+	ctx: GenericEndpointContext,
+	listId: string,
+	index: number,
+) {
+	const entry = await ctx.context.adapter.findOne<{ id: string }>({
+		model: ISSUED_CREDENTIAL_MODEL,
+		where: [
+			{ field: "statusListId", value: listId },
+			{ field: "statusListIndex", value: index },
+		],
+	});
+	return !!entry;
+}
+
+async function findAllocatedIndices(
+	ctx: GenericEndpointContext,
+	listId: string,
+) {
+	const indices = new Set<number>();
+	for (let offset = 0; ; offset += ENTRY_PAGE_SIZE) {
+		const page = await ctx.context.adapter.findMany<StatusEntry>({
+			model: ISSUED_CREDENTIAL_MODEL,
+			where: [{ field: "statusListId", value: listId }],
+			select: ["statusListIndex"],
+			sortBy: { field: "statusListIndex", direction: "asc" },
+			limit: ENTRY_PAGE_SIZE,
+			offset,
+		});
+		for (const entry of page) indices.add(entry.statusListIndex);
+		if (page.length < ENTRY_PAGE_SIZE) return indices;
+	}
+}
+
+/**
+ * Records an issued credential at a random free index of its status list
+ * and returns the record. HAIP 1.0 §6.1 requires a unique, unpredictable
+ * index, so the index is drawn at random; the unique (list, index) index
+ * refuses a second record for one entry, which would let revoking one
+ * credential revoke another.
+ */
+export async function createStatusListEntry(
+	ctx: GenericEndpointContext,
+	options: Oidc4vciOptions,
+	data: {
+		userId: string;
+		credentialConfigurationId: string;
+		format: string;
+	},
+) {
+	const { listId, size } = resolveStatusListOptions(options);
+	const create = async (index: number) => {
+		try {
+			return await ctx.context.adapter.create<
+				Record<string, unknown>,
+				{ id: string; statusListIndex: number }
+			>({
+				model: ISSUED_CREDENTIAL_MODEL,
+				data: {
+					...data,
+					statusListId: listId,
+					statusListIndex: index,
+					status: 0,
+					createdAt: new Date(),
+				},
+			});
+		} catch (error) {
+			// A concurrent issuance took the index first.
+			if (await isIndexAllocated(ctx, listId, index)) return null;
+			throw error;
+		}
+	};
+
+	for (let attempt = 0; attempt < RANDOM_INDEX_ATTEMPTS; attempt++) {
+		const index = randomIndex(size);
+		if (await isIndexAllocated(ctx, listId, index)) continue;
+		const entry = await create(index);
+		if (entry) return entry;
+	}
+	// A crowded list: draw from the indices still free.
+	for (let attempt = 0; attempt < RANDOM_INDEX_ATTEMPTS; attempt++) {
+		const allocated = await findAllocatedIndices(ctx, listId);
+		const free: number[] = [];
+		for (let index = 0; index < size; index++) {
+			if (!allocated.has(index)) free.push(index);
+		}
+		if (!free.length) break;
+		const entry = await create(free[randomIndex(free.length)]!);
+		if (entry) return entry;
+	}
+	throw new APIError("INTERNAL_SERVER_ERROR", {
+		error: "server_error",
+		error_description: "the status list has no free index",
+	});
+}
 
 /**
  * The entries of a list whose status is not valid. Adapters cap an unbounded
@@ -109,8 +169,10 @@ export async function buildStatusListJwt(
 		findChangedEntries(ctx, listId),
 		findHighestIndex(ctx, listId),
 	]);
+	// Unused indices read as valid, so the list's length and content do not
+	// reveal how many credentials it holds.
 	const statuses = Array.from(
-		{ length: Math.max(highestIndex + 1, 1) },
+		{ length: Math.max(highestIndex + 1, statusListOptions.size) },
 		() => 0,
 	);
 	for (const entry of changed) {

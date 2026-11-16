@@ -51,6 +51,7 @@ export type StatusListOptions = {
 	listId: string;
 	bits: 1 | 2 | 4 | 8;
 	ttlSeconds: number;
+	size: number;
 };
 
 export type ProofValidationResult = {
@@ -238,6 +239,17 @@ export type Oidc4vciOptions = {
 		 * @default 3600
 		 */
 		ttlSeconds?: number;
+		/**
+		 * Number of entries in the status list. Each credential gets a random
+		 * free index in this range (HAIP 1.0 §6.1), and the published list
+		 * always has this many entries, so it reveals neither the order of
+		 * issuance nor how many credentials the list holds. Keep it well above
+		 * the number of credentials the list will hold: once it is over half
+		 * full, finding a free index takes longer.
+		 *
+		 * @default 131072
+		 */
+		size?: number;
 	};
 	/**
 	 * Deferred issuance configuration.

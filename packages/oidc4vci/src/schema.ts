@@ -96,20 +96,8 @@ export const schema = {
 				required: true,
 			},
 		},
-	},
-	oidc4vciStatusList: {
-		modelName: "oidc4vciStatusList",
-		fields: {
-			listId: {
-				type: "string",
-				required: true,
-				unique: true,
-			},
-			nextIndex: {
-				type: "number",
-				required: true,
-				defaultValue: 0,
-			},
-		},
+		// One record per status list entry: a shared index would let revoking
+		// one credential revoke another.
+		indexes: [{ fields: ["statusListId", "statusListIndex"], unique: true }],
 	},
 } satisfies BetterAuthPluginDBSchema;

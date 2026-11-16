@@ -1,6 +1,7 @@
 import {
 	DEFAULT_STATUS_LIST_BITS,
 	DEFAULT_STATUS_LIST_ID,
+	DEFAULT_STATUS_LIST_SIZE,
 	DEFAULT_STATUS_LIST_TTL_SECONDS,
 } from "../constants";
 import type { Oidc4vciOptions, StatusListOptions } from "../types";
@@ -87,6 +88,7 @@ export function resolveStatusListOptions(
 		bits: options.statusList?.bits ?? DEFAULT_STATUS_LIST_BITS,
 		ttlSeconds:
 			options.statusList?.ttlSeconds ?? DEFAULT_STATUS_LIST_TTL_SECONDS,
+		size: options.statusList?.size ?? DEFAULT_STATUS_LIST_SIZE,
 	};
 }
 
