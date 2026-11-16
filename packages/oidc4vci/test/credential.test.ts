@@ -405,6 +405,40 @@ describe("oidc4vci - credential endpoint", async () => {
 		expect(new Set(indices).size).toBe(indices.length);
 	});
 
+	it("publishes every revoked entry of a list longer than one adapter page", async () => {
+		const { user } = await issuer.signInWithTestUser();
+		const { adapter } = await issuer.auth.$context;
+		const listId = `bulk-${crypto.randomUUID()}`;
+		const revoked = new Set([3, 120, 149]);
+		for (let index = 0; index < 150; index++) {
+			await adapter.create({
+				model: "oidc4vciIssuedCredential",
+				data: {
+					userId: user.id,
+					credentialConfigurationId: CONFIG_ID,
+					format: "dc+sd-jwt",
+					statusListId: listId,
+					statusListIndex: index,
+					status: revoked.has(index) ? 1 : 0,
+					createdAt: new Date(),
+				},
+			});
+		}
+
+		const res = await issuer.customFetchImpl(
+			`${AUTH_BASE_URL}/oidc4vci/status-list?list_id=${listId}`,
+			{ method: "GET" },
+		);
+		const list = getListFromStatusListJWT(await res.text());
+		for (let index = 0; index < 150; index++) {
+			expect(list.getStatus(index)).toBe(revoked.has(index) ? 1 : 0);
+		}
+		await adapter.deleteMany({
+			model: "oidc4vciIssuedCredential",
+			where: [{ field: "statusListId", value: listId }],
+		});
+	});
+
 	it("publishes status and lets the holder revoke, but not restore, a credential", async () => {
 		const { tokens, headers, user } = await issuer.issueAccessToken();
 		const { proofJwt } = await createJwtProof({ nonce: await issuer.nonce() });

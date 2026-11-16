@@ -59,33 +59,62 @@ export async function getNextStatusListIndex(
 	return updated.nextIndex - 1;
 }
 
+const ISSUED_CREDENTIAL_MODEL = "oidc4vciIssuedCredential";
+const ENTRY_PAGE_SIZE = 1000;
+
+type StatusEntry = { statusListIndex: number; status: number };
+
+/**
+ * The entries of a list whose status is not valid. Adapters cap an unbounded
+ * `findMany`, so the entries are read in pages.
+ */
+async function findChangedEntries(
+	ctx: GenericEndpointContext,
+	listId: string,
+): Promise<StatusEntry[]> {
+	const entries: StatusEntry[] = [];
+	for (let offset = 0; ; offset += ENTRY_PAGE_SIZE) {
+		const page = await ctx.context.adapter.findMany<StatusEntry>({
+			model: ISSUED_CREDENTIAL_MODEL,
+			where: [
+				{ field: "statusListId", value: listId },
+				{ field: "status", operator: "ne", value: 0 },
+			],
+			sortBy: { field: "statusListIndex", direction: "asc" },
+			limit: ENTRY_PAGE_SIZE,
+			offset,
+		});
+		entries.push(...page);
+		if (page.length < ENTRY_PAGE_SIZE) return entries;
+	}
+}
+
+async function findHighestIndex(ctx: GenericEndpointContext, listId: string) {
+	const [highest] = await ctx.context.adapter.findMany<StatusEntry>({
+		model: ISSUED_CREDENTIAL_MODEL,
+		where: [{ field: "statusListId", value: listId }],
+		sortBy: { field: "statusListIndex", direction: "desc" },
+		limit: 1,
+	});
+	return highest?.statusListIndex ?? -1;
+}
+
 export async function buildStatusListJwt(
 	ctx: GenericEndpointContext,
 	options: Oidc4vciOptions,
 	listId: string,
 ) {
 	const statusListOptions = resolveStatusListOptions(options);
-	const entries = await ctx.context.adapter.findMany<{
-		statusListIndex?: number | null;
-		status?: number | null;
-	}>({
-		model: "oidc4vciIssuedCredential",
-		where: [
-			{
-				field: "statusListId",
-				value: listId,
-			},
-		],
-	});
-	const maxIndex = entries.reduce((max, entry) => {
-		const index = entry.statusListIndex;
-		return typeof index === "number" && index > max ? index : max;
-	}, -1);
-	const statuses = Array.from({ length: Math.max(maxIndex + 1, 1) }, () => 0);
-	for (const entry of entries) {
-		if (typeof entry.statusListIndex !== "number") continue;
-		statuses[entry.statusListIndex] =
-			typeof entry.status === "number" ? entry.status : 0;
+	const [changed, highestIndex] = await Promise.all([
+		findChangedEntries(ctx, listId),
+		findHighestIndex(ctx, listId),
+	]);
+	const statuses = Array.from(
+		{ length: Math.max(highestIndex + 1, 1) },
+		() => 0,
+	);
+	for (const entry of changed) {
+		statuses[entry.statusListIndex] = entry.status;
 	}
 
 	const list = new StatusList(statuses, statusListOptions.bits);
