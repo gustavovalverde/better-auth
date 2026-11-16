@@ -46,6 +46,15 @@ export function oidc4vci(options: Oidc4vciOptions) {
 			`@better-auth/oidc4vci: statusList.size must be an integer from 1 to ${MAX_STATUS_LIST_SIZE}`,
 		);
 	}
+	const maxValidCredentials = options.maxValidCredentialsPerUser;
+	if (
+		maxValidCredentials !== undefined &&
+		!(Number.isSafeInteger(maxValidCredentials) && maxValidCredentials > 0)
+	) {
+		throw new Error(
+			"@better-auth/oidc4vci: maxValidCredentialsPerUser must be a positive integer",
+		);
+	}
 	const { getCredentialIssuerMetadata, wellKnownAliasEndpoints } =
 		createMetadataEndpoints(options);
 

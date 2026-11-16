@@ -21,6 +21,7 @@ export const DEFAULT_STATUS_LIST_BITS = 1 as const;
 export const DEFAULT_STATUS_LIST_TTL_SECONDS = 3600;
 export const DEFAULT_STATUS_LIST_SIZE = 131072;
 export const MAX_STATUS_LIST_SIZE = 2 ** 20;
+export const DEFAULT_MAX_VALID_CREDENTIALS_PER_USER = 100;
 
 export const WELL_KNOWN_CREDENTIAL_ISSUER_PATH =
 	"/.well-known/openid-credential-issuer";

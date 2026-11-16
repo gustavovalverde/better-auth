@@ -3,6 +3,7 @@ import { APIError } from "better-auth/api";
 import type { JwtOptions } from "better-auth/plugins";
 import type { User } from "better-auth/types";
 import type { JWK } from "jose";
+import { DEFAULT_MAX_VALID_CREDENTIALS_PER_USER } from "./constants";
 import { throwOidc4vciCredentialError } from "./error";
 import { createStatusListEntry } from "./status-list";
 import type {
@@ -73,6 +74,7 @@ export async function issueCredential(
 		);
 	}
 
+	await assertCredentialQuota(ctx, options, { userId: user.id, cfg });
 	const format = cfg.format ?? "dc+sd-jwt";
 	const entry = await createStatusListEntry(ctx, options, {
 		userId: user.id,
@@ -101,6 +103,43 @@ export async function issueCredential(
 	}
 }
 
+/**
+ * Refuses a credential beyond `maxValidCredentialsPerUser`. A credential
+ * counts while its status is valid and it was issued within
+ * `credentialExpiresInSeconds`, so revoking or outliving one frees a place.
+ */
+async function assertCredentialQuota(
+	ctx: GenericEndpointContext,
+	options: Oidc4vciOptions,
+	input: { userId: string; cfg: CredentialConfiguration },
+) {
+	const max =
+		options.maxValidCredentialsPerUser ??
+		DEFAULT_MAX_VALID_CREDENTIALS_PER_USER;
+	const issuedSince = new Date(
+		Date.now() - credentialLifetimeSeconds(options) * 1000,
+	);
+	const valid = await ctx.context.adapter.count({
+		model: "oidc4vciIssuedCredential",
+		where: [
+			{ field: "userId", value: input.userId },
+			{ field: "credentialConfigurationId", value: input.cfg.id },
+			{ field: "status", value: 0 },
+			{ field: "createdAt", operator: "gt", value: issuedSince },
+		],
+	});
+	if (valid >= max) {
+		throwOidc4vciCredentialError(
+			"credential_request_denied",
+			"the user already holds the maximum number of valid credentials of this configuration",
+		);
+	}
+}
+
+function credentialLifetimeSeconds(options: Oidc4vciOptions) {
+	return options.credentialExpiresInSeconds ?? 31536000;
+}
+
 async function signCredential(
 	ctx: GenericEndpointContext,
 	options: Oidc4vciOptions,
@@ -123,7 +162,7 @@ async function signCredential(
 		iss: resolveCredentialIssuer(ctx, options),
 		vct: cfg.vct,
 		iat: now,
-		exp: now + (options.credentialExpiresInSeconds ?? 31536000),
+		exp: now + credentialLifetimeSeconds(options),
 		status: { status_list: input.status },
 		cnf: {
 			...binding.extraCnf,

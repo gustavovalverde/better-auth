@@ -124,6 +124,42 @@ describe("oidc4vci - a crowded status list", async () => {
 	});
 });
 
+describe("oidc4vci - valid credentials per user", async () => {
+	const issuer = await createIssuer({
+		oidc4vci: { maxValidCredentialsPerUser: 2 },
+	});
+
+	it("refuses a credential beyond the limit until one is revoked", async () => {
+		const { tokens, user } = await issuer.issueAccessToken();
+		const send = async () => {
+			const { proofJwt } = await createJwtProof({
+				nonce: await issuer.nonce(),
+			});
+			return issuer.requestCredential({
+				accessToken: tokens.access_token,
+				body: {
+					credential_configuration_id: CONFIG_ID,
+					proofs: { jwt: [proofJwt] },
+				},
+			});
+		};
+		expect((await send()).status).toBe(200);
+		expect((await send()).status).toBe(200);
+
+		const refused = await send();
+		expect(refused.status).toBe(400);
+		expect((await refused.json()).error).toBe("credential_request_denied");
+
+		const { adapter } = await issuer.auth.$context;
+		await adapter.update({
+			model: "oidc4vciIssuedCredential",
+			where: [{ field: "userId", value: user.id }],
+			update: { status: 1 },
+		});
+		expect((await send()).status).toBe(200);
+	});
+});
+
 describe("oidc4vci - status list entries", async () => {
 	const issuer = await createIssuer({
 		oidc4vci: {
@@ -161,5 +197,16 @@ describe("oidc4vci - status list entries", async () => {
 				statusList: { size: 2 ** 20 },
 			}),
 		).not.toThrow();
+	});
+
+	it("rejects a valid-credential limit that is not a positive integer", () => {
+		for (const maxValidCredentialsPerUser of [0, -1, 2.5]) {
+			expect(() =>
+				oidc4vci({
+					credentialConfigurations: [{ id: CONFIG_ID, vct: "urn:x" }],
+					maxValidCredentialsPerUser,
+				}),
+			).toThrow("maxValidCredentialsPerUser must be a positive integer");
+		}
 	});
 });

@@ -194,6 +194,16 @@ export type Oidc4vciOptions = {
 	 */
 	credentialExpiresInSeconds?: number;
 	/**
+	 * Most valid credentials of one configuration a user may hold. A
+	 * credential counts until it is revoked or `credentialExpiresInSeconds`
+	 * after its issuance, and a credential request beyond the limit is refused
+	 * with `credential_request_denied`. This bounds the status list entries
+	 * and records one user can create.
+	 *
+	 * @default 100
+	 */
+	maxValidCredentialsPerUser?: number;
+	/**
 	 * DPoP (RFC 9449) policy for the credential and deferred credential
 	 * endpoints. The oauth-provider verifies every DPoP-bound access token's
 	 * proof with its own `dpop` settings (algorithms, proof age, and nonces),
