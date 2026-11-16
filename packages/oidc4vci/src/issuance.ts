@@ -25,7 +25,8 @@ export type HolderBinding = {
 
 /**
  * Issues one SD-JWT VC bound to the holder key (`cnf.jwk`, as SD-JWT VC and
- * HAIP expect), allocates its status list entry, and records it. The
+ * HAIP expect), allocates its status list entry, and records that entry
+ * without the credential, which the issuer never reads again. The
  * credential carries no `sub`: SD-JWT VC makes it optional and needs no
  * binding between `sub` and `cnf`, and any identifier in it would let the
  * verifiers it reaches link the holder. `resolveClaims` may return an
@@ -123,7 +124,6 @@ export async function issueCredential(
 			statusListId,
 			statusListIndex,
 			status: 0,
-			credential,
 			createdAt: new Date(),
 		},
 	});

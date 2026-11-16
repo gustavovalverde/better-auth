@@ -91,10 +91,6 @@ export const schema = {
 				type: "date",
 				required: false,
 			},
-			credential: {
-				type: "string",
-				required: true,
-			},
 			createdAt: {
 				type: "date",
 				required: true,

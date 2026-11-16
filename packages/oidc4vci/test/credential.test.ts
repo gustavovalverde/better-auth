@@ -345,6 +345,35 @@ describe("oidc4vci - credential endpoint", async () => {
 		expect(disclosedClaims).not.toContain("email_verified");
 	});
 
+	it("records the status entry without keeping the credential", async () => {
+		const { tokens, user } = await issuer.issueAccessToken();
+		const { proofJwt } = await createJwtProof({ nonce: await issuer.nonce() });
+		const res = await issuer.requestCredential({
+			accessToken: tokens.access_token,
+			body: {
+				credential_configuration_id: CONFIG_ID,
+				proofs: { jwt: [proofJwt] },
+			},
+		});
+		const credential = readCredential(await res.json());
+		const { idx } = (
+			parseSdJwt(credential).payload.status as { status_list: { idx: number } }
+		).status_list;
+
+		const { adapter } = await issuer.auth.$context;
+		const records = await adapter.findMany<Record<string, unknown>>({
+			model: "oidc4vciIssuedCredential",
+			where: [{ field: "userId", value: user.id }],
+		});
+		const record = records.find((entry) => entry.statusListIndex === idx);
+		expect(record).toMatchObject({
+			status: 0,
+			credentialConfigurationId: CONFIG_ID,
+		});
+		expect(record).not.toHaveProperty("credential");
+		expect(JSON.stringify(records)).not.toContain(credential.split("~")[0]!);
+	});
+
 	it("allocates distinct status list indices under concurrent issuance", async () => {
 		const requests = await Promise.all(
 			Array.from({ length: 4 }, async () => {
