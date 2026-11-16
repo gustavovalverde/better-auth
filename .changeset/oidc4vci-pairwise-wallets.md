@@ -8,7 +8,7 @@ Wallets that receive pairwise subjects can now get credentials. The credential a
 Issued credentials change in three ways:
 
 - A credential no longer carries `sub`. Holder binding stays in `cnf.jwk`. To include an identifier you assign, return `sub` from `resolveClaims`. The oidc4vp plugin's `VerifiedPresentation.subject` is `undefined` for these credentials.
-- Each credential gets a random free index in a status list of `statusList.size` entries (131072 by default), as HAIP 1.0 section 6.1 requires, and the published list always has that many entries. A list with no free index refuses issuance with `server_error`. The status list also publishes revoked entries beyond the first 100 records of a list, which it skipped before.
+- Each credential gets a random free index in a status list of `statusList.size` entries (131072 by default), as HAIP 1.0 section 6.1 requires, and the published list always has that many entries. The status list also publishes revoked entries beyond the first 100 records of a list, which it skipped before.
 - The issued-credential record no longer stores the credential.
 
 Check your configuration:
