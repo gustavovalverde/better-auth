@@ -113,7 +113,7 @@ export async function createJwtProof(input: {
 	return { proofJwt: await builder.sign(holder.privateKey), jwk, holder };
 }
 
-export const PAIRWISE_SECRET = "test-pairwise-secret-key-32chars!!";
+const PAIRWISE_SECRET = "test-pairwise-secret-key-32chars!!";
 
 export async function createIssuer(overrides?: {
 	dpop?: OAuthOptions["dpop"];
